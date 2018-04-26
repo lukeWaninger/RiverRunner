@@ -3,7 +3,7 @@ import json
 import re
 import requests
 import pandas as pd
-import settings
+from riverrunner import settings
 
 
 def scrape_rivers_urls():
@@ -137,7 +137,7 @@ def parse_location_components(components, lat, lon):
 
 
 def parse_addresses_from_rivers():
-    df = pd.read_csv('data/rivers2.csv').fillna('null')
+    df = pd.read_csv('data/rivers.csv').fillna('null')
 
     addresses = []
     for name, group in df.groupby(['put_in_lat', 'put_in_long']):
@@ -149,7 +149,18 @@ def parse_addresses_from_rivers():
         components = json.loads(r.content)['results'][0]['address_components']
         addresses.append(parse_location_components(components, name[0], name[1]))
 
-    pd.DataFrame(addresses).to_csv('data/addresses.csv', index=False)
+    for name, group in df.groupby(['take_out_lat', 'take_out_long']):
+        if name[0] == 0 or name[1] == 0:
+            continue
+
+        r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
+                         (name[0], name[1], settings.GEOLOCATION_API_KEY))
+
+        if r.status_code == 200 and len(r.content) > 10:
+            components = json.loads(r.content)['results'][0]['address_components']
+            addresses.append(parse_location_components(components, name[0], name[1]))
+
+    pd.DataFrame(addresses).to_csv('data/addresses_takeout.csv', index=False)
 
 
 def scrape_snowfall():
@@ -252,4 +263,3 @@ def parse_addresses_and_stations_from_precip():
 
     pd.DataFrame(addresses).to_csv('data/addresses_precip.csv', index=None)
     pd.DataFrame(stations).to_csv('data/stations_precip.csv', index=None)
-
