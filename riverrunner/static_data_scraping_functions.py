@@ -145,7 +145,7 @@ def parse_addresses_from_rivers():
             continue
 
         r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
-                         (name[0], name[1], GEOLOCATION_API_KEY))
+                         (name[0], name[1], settings.GEOLOCATION_API_KEY))
         components = json.loads(r.content)['results'][0]['address_components']
         addresses.append(parse_location_components(components, name[0], name[1]))
 
@@ -193,7 +193,7 @@ def parse_addresses_and_stations_from_snowfall():
 
         # parse address information
         r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
-                         (name[0], name[1], GEOLOCATION_API_KEY))
+                         (name[0], name[1], settings.GEOLOCATION_API_KEY))
 
         components = json.loads(r.content)['results'][0]['address_components']
         addresses.append(parse_location_components(components, name[0], name[1]))
@@ -243,7 +243,7 @@ def parse_addresses_and_stations_from_precip():
 
             # parse the address
             r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
-                             (station['latitude'], station['longitude'], GEOLOCATION_API_KEY))
+                             (station['latitude'], station['longitude'], settings.GEOLOCATION_API_KEY))
 
             components = json.loads(r.content)['results'][0]['address_components']
             addresses.append(
