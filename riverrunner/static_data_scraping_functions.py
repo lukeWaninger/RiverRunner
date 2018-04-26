@@ -3,8 +3,7 @@ import json
 import re
 import requests
 import pandas as pd
-
-GEOLOCATION_API_KEY = 'AIzaSyDPq7dNzRaVlQikArCPDTWcD57DgkUNEGE'
+import settings
 
 
 def scrape_rivers_urls():
@@ -108,13 +107,11 @@ def scrape_rivers_urls():
 
 def remove_white_extra_white_space_from_run_names():
     df = pd.read_csv('rivers2.csv')
-
     df.run_name = [re.sub(r'(  )+', ' ', run) for run in df.run_name]
-
     df.to_csv('data/rivers2.csv')
 
 
-def parse_component(components, lat, lon):
+def parse_location_components(components, lat, lon):
     location = {'latitude': lat, 'longitude': lon}
 
     for component in components:
@@ -122,12 +119,16 @@ def parse_component(components, lat, lon):
 
         if 'route' in component_type:
             location['address'] = component['long_name']
+
         elif 'locality' in component_type:
             location['city'] = component['long_name']
+
         elif 'administrative_area_level_2' in component_type:
-            location['route'] = component['long_name']
+            location['route'] = re.sub(r'County', '', component['long_name'])
+
         elif 'administrative_area_level_1' in component_type:
             location['state'] = component['short_name']
+
         elif 'postal_code' in component_type:
             location['zip'] = component['long_name']
 
@@ -135,7 +136,7 @@ def parse_component(components, lat, lon):
     return location
 
 
-def fill_river_location_data():
+def parse_addresses_from_rivers():
     df = pd.read_csv('data/rivers2.csv').fillna('null')
 
     addresses = []
@@ -146,25 +147,9 @@ def fill_river_location_data():
         r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
                          (name[0], name[1], GEOLOCATION_API_KEY))
         components = json.loads(r.content)['results'][0]['address_components']
-        addresses.append(parse_component(components, name[0], name[1]))
+        addresses.append(parse_location_components(components, name[0], name[1]))
 
-    pd.DataFrame(addresses).to_csv('data/locations.csv', index=False)
-
-
-def fill_snowfall_location_data():
-    df = pd.read_csv('data/snowfall.csv')
-
-    addresses = []
-    for name, group in df.groupby(['lat', 'lon']):
-        if name[0] == 0 or name[1] == 0:
-            continue
-
-        r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
-                         (name[0], name[1], GEOLOCATION_API_KEY))
-        components = json.loads(r.content)['results'][0]['address_components']
-        addresses.append(parse_component(components, name[0], name[1]))
-
-    pd.DataFrame(addresses).to_csv('data/locations_snowfall.csv', index=False)
+    pd.DataFrame(addresses).to_csv('data/addresses.csv', index=False)
 
 
 def scrape_snowfall():
@@ -184,7 +169,7 @@ def scrape_snowfall():
                         for row in snf['rows']:
                             lat = row['c'][0]['v']
                             lon = row['c'][1]['v']
-                            location_name = row['c'][2]['v']
+                            location_name = row['c'][2]['v'].strip().lower()
                             depth = row['c'][3]['v']
 
                             this_row = (datetime.datetime.strptime(str(date), '%Y%m%d').date(), lat, lon, location_name, depth)
@@ -196,3 +181,75 @@ def scrape_snowfall():
     df = pd.DataFrame(snowfall)
     df.columns = ['date', 'lat', 'lon', 'location_name', 'depth']
     df.to_csv('data/snowfall.csv', index=None)
+
+
+def parse_addresses_and_stations_from_snowfall():
+    df = pd.read_csv('data/snowfall.csv')
+
+    addresses, stations = [], []
+    for name, group in df.groupby(['lat', 'lon']):
+        if name[0] == 0 or name[1] == 0:
+            continue
+
+        # parse address information
+        r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
+                         (name[0], name[1], GEOLOCATION_API_KEY))
+
+        components = json.loads(r.content)['results'][0]['address_components']
+        addresses.append(parse_location_components(components, name[0], name[1]))
+
+        # parse station information
+        station = dict()
+
+        name = pd.unique(group.location_name)[0]
+        station['station_id'] = name[name.find('(') + 1:-1].strip().lower()
+
+        parts = name[:name.find(',')].split(' ')
+        for i, s in enumerate(parts):
+            if s.isdigit() or s not in \
+                ['N', 'NE', 'NNE', 'ENE', 'E', 'ESE', 'SSE',
+                 'SE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']:
+                parts[i] = s.title()
+
+        station['name'] = ' '.join(parts)
+        station['source'] = 'NOAA'
+        station['latitude'] = pd.unique(group.lat)[0]
+        station['longitude'] = pd.unique(group.lon)[0]
+
+        stations.append(station)
+
+    pd.DataFrame(addresses).to_csv('data/addresses_snowfall.csv', index=False)
+    pd.DataFrame(stations).to_csv('data/stations_snowfall.csv', index=None)
+
+
+def parse_addresses_and_stations_from_precip():
+    stations, addresses = [], []
+
+    for i in range(1, 16):
+        path = 'data/noaa_precip/noaa_precip_%s.csv' % i
+        df = pd.read_csv(path)
+
+        for name, group in df.groupby(['STATION_NAME']):
+            station = dict()
+
+            # parse the station
+            station['name'] = re.sub(r'(WA|US)', '', name).strip().title()
+            station['station_id'] = re.sub(r':', '', pd.unique(group.STATION)[0]).strip().lower()
+            station['source'] = 'NOAA'
+            station['latitude'] = pd.unique(group.LATITUDE)[0]
+            station['longitude'] = pd.unique(group.LONGITUDE)[0]
+
+            stations.append(station)
+
+            # parse the address
+            r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
+                             (station['latitude'], station['longitude'], GEOLOCATION_API_KEY))
+
+            components = json.loads(r.content)['results'][0]['address_components']
+            addresses.append(
+                parse_location_components(components, station['latitude'], station['longitude'])
+            )
+
+    pd.DataFrame(addresses).to_csv('data/addresses_precip.csv', index=None)
+    pd.DataFrame(stations).to_csv('data/stations_precip.csv', index=None)
+
