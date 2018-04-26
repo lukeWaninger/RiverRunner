@@ -1,5 +1,6 @@
 import datetime
 import json
+from math import sin, cos, sqrt, atan2, radians
 import re
 import requests
 import pandas as pd
@@ -263,3 +264,46 @@ def parse_addresses_and_stations_from_precip():
 
     pd.DataFrame(addresses).to_csv('data/addresses_precip.csv', index=None)
     pd.DataFrame(stations).to_csv('data/stations_precip.csv', index=None)
+
+
+def get_distance_between_geo_points(lat1, lon1, lat2, lon2):
+    r = 6373.0
+
+    lat1 = radians(lat1)
+    lon1 = radians(lon1)
+    lat2 = radians(lat2)
+    lon2 = radians(lon2)
+
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+    return (r * c)*0.621371  # convert km to miles
+
+
+def compute_station_river_distances():
+    stations = pd.read_csv('data/stations.csv')
+    rivers = pd.read_csv('data/rivers.csv')
+    distances = []
+
+    for station in stations.iterrows():
+        sx, sy = station[1]['latitude'], station[1]['longitude']
+
+        for river in rivers.iterrows():
+            entry = {
+                'station_id': station[1]['station_id'],
+                'river_id': river[1]['river_id']
+            }
+
+            # compute distance from put in
+            rx, ry = river[1]['put_in_lat'], river[1]['put_in_long']
+            entry['put_in_distance'] = get_distance_between_geo_points(sx, sy, rx, ry)
+
+            # compute distance from take out
+            rx, ry = river[1]['take_out_lat'], river[1]['take_out_long']
+            entry['take_out_distance'] = get_distance_between_geo_points(sx, sy, rx, ry)
+            distances.append(entry)
+
+    pd.DataFrame(distances).to_csv('data/distances.csv', index=None)
