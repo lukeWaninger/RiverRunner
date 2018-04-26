@@ -1,6 +1,9 @@
+import json
 import re
 import requests
 import pandas as pd
+
+GEOLOCATION_API_KEY = 'AIzaSyDPq7dNzRaVlQikArCPDTWcD57DgkUNEGE'
 
 
 def scrape_rivers_urls():
@@ -107,7 +110,38 @@ def remove_white_extra_white_space_from_run_names():
 
     df.run_name = [re.sub(r'(  )+', ' ', run) for run in df.run_name]
 
-    df.to_csv('data/rivers2_a.csv')
+    df.to_csv('data/rivers2.csv')
 
 
-remove_white_extra_white_space_from_run_names()
+def fill_river_location_data():
+    df = pd.read_csv('data/rivers2.csv').fillna('null')
+
+    addresses = []
+    for name, group in df.groupby(['put_in_lat', 'put_in_long']):
+        if name[0] == 0 or name[1] == 0:
+            continue
+
+        r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
+                         (name[0], name[1], GEOLOCATION_API_KEY))
+        components = json.loads(r.content)['results'][0]['address_components']
+
+        location = {}
+        for component in components:
+            location['latitude'] = name[0]
+            location['longitude'] = name[1]
+
+            type = component['types']
+
+            if 'route' in type:
+                location['address'] = component['long_name']
+            elif 'locality' in type:
+                location['city'] = component['long_name']
+            elif 'administrative_area_level_2' in type:
+                location['route'] = component['long_name']
+            elif 'administrative_area_level_1' in type:
+                location['state'] = component['short_name']
+            elif 'postal_code' in type:
+                location['zip'] = component['long_name']
+        addresses.append(location)
+
+    pd.DataFrame(addresses).to_csv('data/locations.csv', index=False)
