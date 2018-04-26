@@ -113,6 +113,27 @@ def remove_white_extra_white_space_from_run_names():
     df.to_csv('data/rivers2.csv')
 
 
+def parse_component(components, lat, lon):
+    location = {'latitude': lat, 'longitude': lon}
+
+    for component in components:
+        component_type = component['types']
+
+        if 'route' in component_type:
+            location['address'] = component['long_name']
+        elif 'locality' in component_type:
+            location['city'] = component['long_name']
+        elif 'administrative_area_level_2' in component_type:
+            location['route'] = component['long_name']
+        elif 'administrative_area_level_1' in component_type:
+            location['state'] = component['short_name']
+        elif 'postal_code' in component_type:
+            location['zip'] = component['long_name']
+
+    print(location)
+    return location
+
+
 def fill_river_location_data():
     df = pd.read_csv('data/rivers2.csv').fillna('null')
 
@@ -124,24 +145,22 @@ def fill_river_location_data():
         r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
                          (name[0], name[1], GEOLOCATION_API_KEY))
         components = json.loads(r.content)['results'][0]['address_components']
-
-        location = {}
-        for component in components:
-            location['latitude'] = name[0]
-            location['longitude'] = name[1]
-
-            type = component['types']
-
-            if 'route' in type:
-                location['address'] = component['long_name']
-            elif 'locality' in type:
-                location['city'] = component['long_name']
-            elif 'administrative_area_level_2' in type:
-                location['route'] = component['long_name']
-            elif 'administrative_area_level_1' in type:
-                location['state'] = component['short_name']
-            elif 'postal_code' in type:
-                location['zip'] = component['long_name']
-        addresses.append(location)
+        addresses.append(parse_component(components, name[0], name[1]))
 
     pd.DataFrame(addresses).to_csv('data/locations.csv', index=False)
+
+
+def fill_snowfall_location_data():
+    df = pd.read_csv('data/snowfall.csv')
+
+    addresses = []
+    for name, group in df.groupby(['lat', 'lon']):
+        if name[0] == 0 or name[1] == 0:
+            continue
+
+        r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
+                         (name[0], name[1], GEOLOCATION_API_KEY))
+        components = json.loads(r.content)['results'][0]['address_components']
+        addresses.append(parse_component(components, name[0], name[1]))
+
+    pd.DataFrame(addresses).to_csv('data/locations_snowfall.csv', index=False)
