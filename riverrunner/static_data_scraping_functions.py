@@ -141,6 +141,7 @@ def parse_addresses_from_rivers():
     df = pd.read_csv('data/rivers.csv').fillna('null')
 
     addresses = []
+    # put in addresses
     for name, group in df.groupby(['put_in_lat', 'put_in_long']):
         if name[0] == 0 or name[1] == 0:
             continue
@@ -150,6 +151,7 @@ def parse_addresses_from_rivers():
         components = json.loads(r.content)['results'][0]['address_components']
         addresses.append(parse_location_components(components, name[0], name[1]))
 
+    # take out addresses
     for name, group in df.groupby(['take_out_lat', 'take_out_long']):
         if name[0] == 0 or name[1] == 0:
             continue
@@ -307,3 +309,28 @@ def compute_station_river_distances():
             distances.append(entry)
 
     pd.DataFrame(distances).to_csv('data/distances.csv', index=None)
+
+
+def parse_addresses_and_stations_from_usgs():
+    df = pd.read_csv('data/stations_usgs.csv').fillna('null')
+
+    addresses, stations = [], []
+    for row in df.iterrows():
+        station = {
+            'lat': row[1]['lat'],
+            'lon': row[1]['lon'],
+            'station_id': str(row[1]['site_id']).lower(),
+            'name': row[1]['name'].title(),
+            'source': row[1]['source']
+        }
+        stations.append(station)
+
+        r = requests.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s' %
+                         (station['lat'], station['lon'], settings.GEOLOCATION_API_KEY))
+
+        if r.status_code == 200 and len(r.content) > 10:
+            components = json.loads(r.content)['results'][0]['address_components']
+            addresses.append(parse_location_components(components, station['lat'], station['lon']))
+
+    pd.DataFrame(addresses).to_csv('data/addresses_usgs.csv', index=None)
+    pd.DataFrame(stations).to_csv('data/stations_usgs.csv', index=None)
