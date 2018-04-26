@@ -1,3 +1,5 @@
 doc/_build/
 .idea/
 riverrunner/data/
+
+settings.py
