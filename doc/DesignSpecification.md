@@ -11,7 +11,8 @@ The main modules being used for this will be `json`, `re`, `requests`, and `pand
 The runs being processed by this application are static and gathered at the time of initial development. Each run is 
 retrieved from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>
 Initial river IDs are pulled from Professor Paddle's main page with Chrome dev tools and JQuery. URLs are then 
-generated for each river and retrieved via `requests` and processed character-by-character into a Pandas DataFrame. 
+generated for each river and retrieved via `requests` and processed character-by-character into a Pandas data frame 
+and saved to '/data/rivers.csv'. 
 `def scrape_river_urls()`  
 
 <b>relational mapping</b> - <i>river_run</i>  
@@ -27,9 +28,28 @@ generated for each river and retrieved via `requests` and processed character-by
 * take_out_latitude: <em>real</em> - run ending point latitude (DD), FK->[addresses].latitude
 * take_out_longitude: <em>real</em> - run ending point longitude (DD), FK->[addresses].longitude
 
+Associated address information is process in `def parse_addresses_from_rivers()`.
+
 #### Temperature/Precipitation Data
+Temperature and precipitation data was gathered through individual requests for each station on the NOAA website. 
+Each request returned a CSV file with all recording for the specific weather station. Addresses and stations were 
+parsed from these files in `def parse_addresses_and_stations_from_precip()`.
 
 #### Snowfall Data
+Initial snowfall data was retrieved from <a alt='NOAA snowfall' href='https://www.ncdc.noaa.gov/snow-and-ice/daily-snow/'>NOAA</a>
+The function `def scrape_snowfall()` retrieves snowfall data for all reporting stations in Washington, one day at a 
+time. Results are saved to 'data/snowfall.csv' and manually uploaded to the database.
+
+<b>relational mapping</b> - stored to <i>metric</i>, <i>station</i>, and <i>measurement</i>  
+gathered attributes are
+* date: <em>timestamp</em> - timestamp measurement was recorded
+* lat:  <em>real</em> - geographical latitude of reporting station
+* lon:  <em>real</em> - geographical longitude of reporting station
+* location_name <em>varchar(31)</em> - name of reporting station
+* depth: <em>real</em> - recorded depth of snow measured in inches
+
+Addresses and stations associated with each measurement are processed from their respective latitude and longitudes 
+through `def parse_addresses_and_stations_from_snowfal()` and saved to the csv file described above.
 
 #### Location Data
 Address information is retrieved using `requests` through Google's <a alt='Google Geocoding' href='https://developers.google.com/maps/documentation/geocoding/start'>Geocoding API</a> 
@@ -43,8 +63,7 @@ Each latitude and longitude pair throughout the application is processed through
  * address: <em>varchar(255)</em> - street address
  * city: <em>varchar(255)</em> - city
  * state: <em>varchar(2)</em> - 2 letter state identification code, FK->[state].state_id
- * zip: <em>varchar(10)</em> - up to ten character zip code
- + clustered index on (latitude, longitude)
+ * zip: <em>varchar(10)</em> - up to ten character zip code  
 
 #### River Metric Data
 
@@ -54,23 +73,11 @@ For all rivers in Washington, we would like to have time series data for streamf
 * Extract timestamp and measurement value from JSON format and write to CSV file
 * Insert records in CSV file to our database storage
 
-### Continuous Data Retrieval
-
-#### Temperature/Precipitation Data
-
-#### Snowfall Data
-
-#### River Metric Data
-
-## Interactions
-
-### Data Storage
+#### Additional schema information
 All data will be gathered and processed according to this specification before being committed for persistence. Persistence will be managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
 </br>
 <img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
 <br/>
-#### Tables
-
 Each table listed below indices on it's primary key unless otherwise noted
 * <b>state</b> - <i>state indentification information</i>    
     * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
@@ -86,8 +93,6 @@ Each table listed below indices on it's primary key unless otherwise noted
     * address: <em>varchar(255)</em> - closest street address to point
     * zip: <em>varchar(10)</em> - zip code
 <br/>
-
-
 
 * <b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i>    
    * station_id <em>varchar(31)</em>: the station id for the weather station as listed by the station's data , PK
@@ -127,3 +132,13 @@ Distances are calculated via the following code snippet
     * value <em>real</em> the measurement value recorded
     + clustered index on (date_time)
     + unclustered index on (station_id), (metric_id)
+
+### Continuous Data Retrieval
+
+#### Temperature/Precipitation Data
+
+#### Snowfall Data
+
+#### River Metric Data
+
+## Interactions
