@@ -9,33 +9,33 @@ PostgresSQL 10.3 - Ubuntu Server 16.04 LTE
 <br/>
 #### Tables
 Each table listed below indices on it's primary key unless otherwise noted
-* <b>state</b> - <i>state indentification information</i>     
-  short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
-  long_name: <em>varchar(31)</em> - state’s full spelling    
+* <b>state</b> - <i>state indentification information</i>    
+    * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
+    * long_name: <em>varchar(31)</em> - state’s full spelling    
 <br/>
 
 * <b>address</b> - <i>political boundary data related to GPS locations</i>     
-  latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
-  longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
-  city: <em>varchar(255)</em> - name of closest city
-  county: <em>varchar(255)</em> - name of county
-  state: <em>varchar(2)</em> - two letter state identification code, FK->[state].short_name
-  address: <em>varchar(255)</em> - closest street address to point
-  zip: <em>varchar(10)</em> - zip code
+    * latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
+    * longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
+    * city: <em>varchar(255)</em> - name of closest city
+    * county: <em>varchar(255)</em> - name of county
+    * state: <em>varchar(2)</em> - two letter state identification code, FK->[state].short_name
+    * address: <em>varchar(255)</em> - closest street address to point
+    * zip: <em>varchar(10)</em> - zip code
 <br/>
 
-* <b>river_run</b> - <i>white water rafting sites and related information </i>
-  <em>river_id</em>: <em>integer</em> PK as pulled  from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>
-  class_rating: <em>varchar(31)</em> - white water rating
-  max_level: <em>integer</em> - maximum recommended stream flow for run
-  min_level: <em>integer</em> - minimum recommended stream flow for run
-  put_in_latitude: <em>real</em> - run starting point latitude (DD), FK->[addresses].latitude
-  put_in_longitude: <em>real</em> - run starting point longitude (DD), FK->[addresses].longitude
-  distance: <em>real</em> - run length
-  river_name: <em>varchar(255)</em> - name of river
-  run_name: <em>varchar(255)</em> - name of run
-  take_out_latitude: <em>real</em> - run ending point latitude (DD), FK->[addresses].latitude
-  take_out_longitude: <em>real</em> - run ending point longitude (DD), FK->[addresses].longitude
+* <b>river_run</b> - <i>white water rafting sites and related information </i>   
+    * <em>river_id</em>: <em>integer</em> PK as pulled  from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>
+    * class_rating: <em>varchar(31)</em> - white water rating
+    * max_level: <em>integer</em> - maximum recommended stream flow for run
+    * min_level: <em>integer</em> - minimum recommended stream flow for run
+    * put_in_latitude: <em>real</em> - run starting point latitude (DD), FK->[addresses].latitude
+    * put_in_longitude: <em>real</em> - run starting point longitude (DD), FK->[addresses].longitude
+    * distance: <em>real</em> - run length
+    * river_name: <em>varchar(255)</em> - name of river
+    * run_name: <em>varchar(255)</em> - name of run
+    * take_out_latitude: <em>real</em> - run ending point latitude (DD), FK->[addresses].latitude
+    * take_out_longitude: <em>real</em> - run ending point longitude (DD), FK->[addresses].longitude
 <br/>
 
 * <b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i>     
