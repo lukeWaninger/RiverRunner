@@ -57,13 +57,20 @@ Each latitude and longitude pair throughout the application is processed through
  political boundary information. JSON results are processed through  `def parse_location_components()` and inserted 
  into the database.
  
- <b>relational mapping</b> - <i>address</i>, <i>state</i>
- * latitude: <em>real</em> - geographical latitude (DD), PK
- * longitude: <em>real</em> - geographical longitude (DD), PK
- * address: <em>varchar(255)</em> - street address
- * city: <em>varchar(255)</em> - city
- * state: <em>varchar(2)</em> - 2 letter state identification code, FK->[state].state_id
- * zip: <em>varchar(10)</em> - up to ten character zip code  
+* <b>state</b> - <i>state indentification information</i>    
+    * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
+    * long_name: <em>varchar(31)</em> - state’s full spelling    
+<br/>
+
+* <b>address</b> - <i>political boundary data related to GPS locations</i>     
+    * latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
+    * longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
+    * city: <em>varchar(255)</em> - name of closest city
+    * county: <em>varchar(255)</em> - name of county
+    * state: <em>varchar(2)</em> - two letter state identification code, FK->[state].short_name
+    * address: <em>varchar(255)</em> - closest street address to point
+    * zip: <em>varchar(10)</em> - zip code
+<br/>
 
 #### River Metric Data
 
@@ -79,20 +86,6 @@ All data will be gathered and processed according to this specification before b
 <img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
 <br/>
 Each table listed below indices on it's primary key unless otherwise noted
-* <b>state</b> - <i>state indentification information</i>    
-    * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
-    * long_name: <em>varchar(31)</em> - state’s full spelling    
-<br/>
-
-* <b>address</b> - <i>political boundary data related to GPS locations</i>     
-    * latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
-    * longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
-    * city: <em>varchar(255)</em> - name of closest city
-    * county: <em>varchar(255)</em> - name of county
-    * state: <em>varchar(2)</em> - two letter state identification code, FK->[state].short_name
-    * address: <em>varchar(255)</em> - closest street address to point
-    * zip: <em>varchar(10)</em> - zip code
-<br/>
 
 * <b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i>    
    * station_id <em>varchar(31)</em>: the station id for the weather station as listed by the station's data , PK
