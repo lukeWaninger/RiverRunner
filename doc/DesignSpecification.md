@@ -2,7 +2,6 @@
 
 ## Components
 
-<<<<<<< HEAD
 ### Database
 PostgresSQL 10.3 - Ubuntu Server 16.04 LTE
 </br>
