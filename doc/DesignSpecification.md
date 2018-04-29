@@ -2,7 +2,6 @@
 
 ## Components
 
-<<<<<<< HEAD
 ### Database
 PostgresSQL 10.3 - Ubuntu Server 16.04 LTE
 <img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
