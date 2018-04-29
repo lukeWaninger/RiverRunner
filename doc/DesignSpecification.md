@@ -71,11 +71,17 @@ Each latitude and longitude pair throughout the application is processed through
     * zip: <em>varchar(10)</em> - zip code
 
 #### River Metric Data
-For all rivers in Washington, we would like to have time series data for streamflow and a wide variety of other metrics to use as predictors for streamflow. We first retrieve a list of all USGS stream sites (stations) in the state of Washington and formulate a list of all metrics (that are provided by USGS) we would like to include in our model as predictors. Using these lists and python's `requests` module, the retrieval process is outlined below:
+For all rivers in Washington, we would like to have time series data for streamflow and a wide variety of other metrics to use as predictors for streamflow. We first retrieve a list of all <a href='https://waterdata.usgs.gov/wa/nwis/uv'>USGS stream sites</a> (stations) in the state of Washington and formulate a list of all metrics (that are <a href='https://help.waterdata.usgs.gov/parameter_cd?group_cd=%'>provided by USGS</a>) we would like to include in our model as predictors. Using these lists and python's `requests` module, the retrieval process is outlined below:
 
 * Call USGS's Instantaneous Values API for each combination of site and metric, returning data in a JSON format
 * Extract timestamp and measurement value from JSON format and write to CSV file
-* Insert records in CSV file to our database storage
+* Insert rows in CSV file into the database
+
+<b>relational mapping</b> - <i>measurement</i>
+* site_id: <em>varchar(31)</em> - id of site taken directly from list of all USGS stream sites
+* metric_id: <em>varchar(31)</em> - id of metric taken directly from list of all USGS metrics
+* date_time: <em>timestamp</em> - timestamp when measurement was recorded
+* value: <em>real</em> - recorded measurement
 
 #### Additional schema information
 All data will be gathered and processed according to this specification before being committed for persistence. Persistence will be managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
@@ -124,6 +130,8 @@ Distances are calculated via the following code snippet
     + unclustered index on (station_id), (metric_id)
 
 ### Continuous Data Retrieval
+
+Retrieving all static and historical data need only be done once, but to keep the data up to date, we need to continuously retrieve and integrate all new time series data into the database.
 
 #### Temperature/Precipitation Data
 
