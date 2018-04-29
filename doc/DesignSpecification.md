@@ -5,51 +5,52 @@
 <<<<<<< HEAD
 ### Database
 PostgresSQL 10.3 - Ubuntu Server 16.04 LTE
+</br>
 <img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
-
+<br/>
 #### Tables
 Each table listed below indices on it's primary key unless otherwise noted
-* <strong>state</strong> - <span style='font-style:italic'>state indentification information</span>     
-  <span style='text-decoration:underline'>short_name</span>: <span style='color:darkblue'>varchar(2)</span> -  two letter state indicator code, PK
-  long_name: <span style='color:darkblue'>varchar(31)</span> - state’s full spelling    
+* <b>state</b> - <i>state indentification information</i>     
+  short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
+  long_name: <em>varchar(31)</em> - state’s full spelling    
 <br/>
 
-* <strong>address</strong> - <span style='font-style:italic'>political boundary data related to GPS locations</span>     
-  <span style='text-decoration:underline'>latitude</span>: <span style='color:darkblue'>real</span> - GPS position in decimal degree (DD) formatting, PK
-  <span style='text-decoration:underline'>longitude</span>: <span style='color:darkblue'>real</span> - GPS position in decimal degree (DD) formatting, PK
-  city: <span style='color:darkblue'>varchar(255)</span> - name of closest city
-  county: <span style='color:darkblue'>varchar(255)</span> - name of county
-  state: <span style='color:darkblue'>varchar(2)</span> - two letter state identification code, FK$\rightarrow$[state].short_name
-  address: <span style='color:darkblue'>varchar(255)</span> - closest street address to point
-  zip: <span style='color:darkblue'>varchar(10)</span> - zip code
+* <b>address</b> - <i>political boundary data related to GPS locations</i>     
+  latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
+  longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
+  city: <em>varchar(255)</em> - name of closest city
+  county: <em>varchar(255)</em> - name of county
+  state: <em>varchar(2)</em> - two letter state identification code, FK->[state].short_name
+  address: <em>varchar(255)</em> - closest street address to point
+  zip: <em>varchar(10)</em> - zip code
 <br/>
 
-* <strong>river_run</strong> - <span style='font-style:italic'>white water rafting sites and related information </span>
-  <span style='text-decoration:underline'>river_id</span>: <span style='color:darkblue'>integer</span> PK as pulled  from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>
-  class_rating: <span style='color:darkblue'>varchar(31)</span> - white water rating
-  max_level: <span style='color:darkblue'>integer</span> - maximum recommended stream flow for run
-  min_level: <span style='color:darkblue'>integer</span> - minimum recommended stream flow for run
-  put_in_latitude: <span style='color:darkblue'>real</span> - run starting point latitude (DD), FK$\rightarrow$[addresses].latitude
-  put_in_longitude: <span style='color:darkblue'>real</span> - run starting point longitude (DD), FK$\rightarrow$[addresses].longitude
-  distance: <span style='color:darkblue'>real</span> - run length
-  river_name: <span style='color:darkblue'>varchar(255)</span> - name of river
-  run_name: <span style='color:darkblue'>varchar(255)</span> - name of run
-  take_out_latitude: <span style='color:darkblue'>real</span> - run ending point latitude (DD), FK$\rightarrow$[addresses].latitude
-  take_out_longitude: <span style='color:darkblue'>real</span> - run ending point longitude (DD), FK$\rightarrow$[addresses].longitude
+* <b>river_run</b> - <i>white water rafting sites and related information </i>
+  <em>river_id</em>: <em>integer</em> PK as pulled  from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>
+  class_rating: <em>varchar(31)</em> - white water rating
+  max_level: <em>integer</em> - maximum recommended stream flow for run
+  min_level: <em>integer</em> - minimum recommended stream flow for run
+  put_in_latitude: <em>real</em> - run starting point latitude (DD), FK->[addresses].latitude
+  put_in_longitude: <em>real</em> - run starting point longitude (DD), FK->[addresses].longitude
+  distance: <em>real</em> - run length
+  river_name: <em>varchar(255)</em> - name of river
+  run_name: <em>varchar(255)</em> - name of run
+  take_out_latitude: <em>real</em> - run ending point latitude (DD), FK->[addresses].latitude
+  take_out_longitude: <em>real</em> - run ending point longitude (DD), FK->[addresses].longitude
 <br/>
 
-* <strong>station</strong> - <span style='font-style:italic'>weather reporting stations for both NOAA and USGS data points</span>     
-<span style='text-decoration:underline'></span>: <span style='color:darkblue'></span>
+* <b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i>     
+<em></em>: <em></em>
 
-* <strong>station_river_distance</strong> - <span style='font-style:italic'></span>     
-<span style='text-decoration:underline'></span>: <span style='color:darkblue'></span>
+* <b>station_river_distance</b> - <i></em>     
+<em></em>: <em></em>
 
-* <strong>metric</strong> - <span style='font-style:italic'></span>     
-<span style='text-decoration:underline'></span>: <span style='color:darkblue'></span>
+* <b>metric</b> - <i></i>     
+<em></em>: <em></em>
 
-* <strong>measurement</strong> - <span style='font-style:italic'></span>     
-<span style='text-decoration:underline'></span>: <span style='color:darkblue'></span>
-=======
+* <b>measurement</b> - <i></i>     
+<em></em>: <em></em>  
+
 ### Retrieve Historical Data
 
 #### River/Run Information
@@ -74,5 +75,4 @@ For all rivers in Washington, we would like to have time series data for streamf
 
 #### River Metric Data
 
->>>>>>> 17112ff7367483da8a668b1a1dbccf8b4e3dcba4
 ## Interactions
