@@ -61,8 +61,6 @@ Each latitude and longitude pair throughout the application is processed through
 * <b>state</b> - <i>state indentification information</i>    
     * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
     * long_name: <em>varchar(31)</em> - state’s full spelling    
-<br/>
-
 * <b>address</b> - <i>political boundary data related to GPS locations</i>     
     * latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
     * longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK
@@ -71,10 +69,8 @@ Each latitude and longitude pair throughout the application is processed through
     * state: <em>varchar(2)</em> - two letter state identification code, FK->[state].short_name
     * address: <em>varchar(255)</em> - closest street address to point
     * zip: <em>varchar(10)</em> - zip code
-<br/>
 
 #### River Metric Data
-
 For all rivers in Washington, we would like to have time series data for streamflow and a wide variety of other metrics to use as predictors for streamflow. We first retrieve a list of all USGS stream sites (stations) in the state of Washington and formulate a list of all metrics (that are provided by USGS) we would like to include in our model as predictors. Using these lists and python's `requests` module, the retrieval process is outlined below:
 
 * Call USGS's Instantaneous Values API for each combination of site and metric, returning data in a JSON format
