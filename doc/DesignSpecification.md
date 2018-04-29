@@ -2,12 +2,13 @@
 
 ## Components
 
-### Database
-PostgresSQL 10.3 - Ubuntu Server 16.04 LTE
+### Data Storage
+All data will be gathered and processed according to this specification before being committed for persistence. Persistence will be managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
 </br>
 <img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
 <br/>
 #### Tables
+
 Each table listed below indices on it's primary key unless otherwise noted
 * <b>state</b> - <i>state indentification information</i>    
     * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
@@ -38,10 +39,22 @@ Each table listed below indices on it's primary key unless otherwise noted
     * take_out_longitude: <em>real</em> - run ending point longitude (DD), FK->[addresses].longitude
 <br/>
 
-* <b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i>     
-<em></em>: <em></em>
+* <b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i>    
+   * station_id <em>varchar(31)</em>: the station id for the weather station as listed by the station's data , PK
+   * source <em>varchar(4)</em> the original data source author
+   * name <em>varach(255)</em> the human readable statin name as listed by original data source
+   * latitude <em>real</em> station's geographical latitude (DD), FK->[addresses].latitude
+   * longitude <em>real</em> station's geographical longitude (DD), FK->[addresses].longitude
+   + clustered index on (latitude, longitude)
+   + unclustered index on (station_id) 
 
-* <b>station_river_distance</b> - <i></em>     
+* <b>station_river_distance</b> - <i>stores geographical distances between each run and each weather station.</i> Distances are calculated via the following code snippet
+```python
+    a = sin((lat2-lat1)/2)**2 + cos(lat1) * cos(lat2) * sin((lon2-lon1)/2)**2
+    c = 2*atan2(sqrt(a), sqrt(1 - a))
+
+    return r*c*0.621371
+```
 <em></em>: <em></em>
 
 * <b>metric</b> - <i></i>     
