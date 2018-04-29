@@ -56,7 +56,8 @@ Address information is retrieved using `requests` through Google's <a alt='Googl
 Each latitude and longitude pair throughout the application is processed through the API in order to retrieve related
  political boundary information. JSON results are processed through  `def parse_location_components()` and inserted 
  into the database.
- 
+
+<b>relational mapping</b>
 * <b>state</b> - <i>state indentification information</i>    
     * short_name: <em>varchar(2)</em> -  two letter state indicator code, PK
     * long_name: <em>varchar(31)</em> - state’s full spelling    
