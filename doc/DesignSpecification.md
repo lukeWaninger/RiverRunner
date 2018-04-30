@@ -130,13 +130,15 @@ Distances are calculated via the following code snippet
     + unclustered index on (station_id), (metric_id)
 
 ### Continuous Data Retrieval
-
-Retrieving all static and historical data need only be done once, but to keep the data up to date, we need to continuously retrieve and integrate all new time series data into the database.
+Retrieving all static and historical data need only be done once, but to keep the data up to date, we need to continuously retrieve and integrate all new time series data into the database. The plan is to retrieve new time series data from the following categories on a daily basis.
 
 #### Temperature/Precipitation Data
+Since retrieving historical temperature and precipitation data from NOAA involves sending a request and receiving an email in response containing a link to download the requested data (a process that would be cumbersome to repeat on a daily basis), it would be ideal to find a separate source for daily temperature and precipitation data. After a separate source is found with simpler automatability, we will begin the process of automatically retrieving and ingesting time series temperature and precipitation data into the database on a daily basis.
 
 #### Snowfall Data
+As part of the process of retrieving historical snowfall data, we retrieve time series data one day at a time. So, the `scrape_snowfall()` function can seemlessly be reused to continuously retrieve new data, with the only modification needed is to automate the uploading of snowfall data into the database.
 
 #### River Metric Data
+<a href='https://waterservices.usgs.gov/rest/IV-Test-Tool.html'>USGS's Instantaneous Values API</a> makes it easy to automate the continuous retrieval of time series data. The only difference between retrieving historical data and continuously retrieving river metric data from USGS is eliminating the creation of an intermediate CSV file and, instead, inserting the JSON data returned from the API directly into the database.
 
 ## Interactions
