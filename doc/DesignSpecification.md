@@ -138,4 +138,23 @@ As part of the process of retrieving historical snowfall data, we retrieve time 
 #### River Metric Data
 <a href='https://waterservices.usgs.gov/rest/IV-Test-Tool.html'>USGS's Instantaneous Values API</a> makes it easy to automate the continuous retrieval of time series data. The only difference between retrieving historical data and continuously retrieving river metric data from USGS is eliminating the creation of an intermediate CSV file and, instead, inserting the JSON data returned from the API directly into the database.
 
+### Web server
+A simple web server will be required to process user requests. This will be implemented using nodejs running on Ubuntu Server 16.06 LTE.
+
+<b>Web requests</b> will be processed through a single nodejs HTTP endpoint.
+
+<b>Prediction data</b> will be provided on demand and cached by the browser once retrieved. These requests will go through the same HTTP endpoint and provide JSON data as a result.
+
+### Server side predictions
+Immediately following daily retrieval, the ARIMA model will be recalculated with results being placed in separate JSON files for easy retrieval.
+
+### Client side interface
+A single HTML page will be created matching the mockup described in the functional specifications of this application. The page will store all required javascript and CSS data as the entire application only cosists of a single page.
+
 ## Interactions
+### Use case 1: The paddler
+The paddler requests to view stream flow predictions for a specific kayaking run. The user has two options for finding a rivers predictions:
+1. User searches for a river by typing the river name in the top search bar. The bar will autopopulate with a drop down to filter run names as the user types. Selecting a run will request a prediction.
+2. User views the runs populated on the map, clicking a point to retrieve predictions.
+
+The page will have loaded with a .csv file containing predictions for the following two weeks. Using javascript, the prediction image will redraw with the selected run's prediction.
