@@ -124,9 +124,6 @@ Distances are calculated via the following code snippet
 + unclustered index on (station_id), (metric_id)
 
 ### Continuous Data Retrieval
-Retrieving all static and historical data need only be done once, but to keep the data up to date, we need to continuously retrieve and integrate all new time series data into the database.
-
-### Continuous Data Retrieval
 Retrieving all static and historical data need only be done once, but to keep the data up to date, we need to continuously retrieve and integrate all new time series data into the database. The plan is to retrieve new time series data from the following categories on a daily basis.
 
 #### Temperature/Precipitation Data
