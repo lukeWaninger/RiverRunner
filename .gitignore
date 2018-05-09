@@ -3,3 +3,4 @@ doc/_build/
 riverrunner/data/
 
 settings.py
+client_secrets.json
