@@ -1,5 +1,6 @@
 doc/_build/
 .idea/
+riverrunner/__pycache__
 riverrunner/data/
 
 settings.py

@@ -229,8 +229,6 @@ class StationRiverDistance(Base):
     put_in_distance   = Column(Float)
     take_out_distance = Column(Float)
 
-    Index('idx_distance', 'put_in_distance', unique=True)
-
     @hybrid_property
     def source(self):
         return self.station.source

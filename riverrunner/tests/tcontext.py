@@ -8,7 +8,7 @@ import time
 class TContext(context.Context):
     def __init__(self):
         super().__init__(settings.DATABASE_TEST)
-        self.weather_sources = ['NOAA', 'USGS']
+        self.weather_sources = ['NOAA', 'USGS', 'SNOW']
 
     def clear_dependency_data(self, session):
         self.clear_all_tables(session)
@@ -63,7 +63,7 @@ class TContext(context.Context):
 
         :param i: int, number of measurements to generate
         :param session: context.Session(), the db session for which to pass
-                        station and metric dependencies
+        station and metric dependencies
         :return: list, containing i Measurements
         """
         stations = self.get_stations_for_test(i, session)
@@ -109,7 +109,7 @@ class TContext(context.Context):
 
         :param i: int, number of predictions to generate
         :param session: context.Session(), db session for which to
-               add prediction dependencies
+        add prediction dependencies
         :return: list, containing i random predictions
         """
         runs = self.get_runs_for_test(i, session)

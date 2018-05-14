@@ -2,7 +2,7 @@ import datetime
 from riverrunner import context
 from riverrunner.context import Address, Measurement, Metric, RiverRun, Station, StationRiverDistance
 from riverrunner.repository import Repository
-from riverrunner.tests.test_context import TContext
+from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
 
 
@@ -137,10 +137,21 @@ class TestRepository(TestCase):
                           run_id=runs[0].run_id,
                           start_date=now + datetime.timedelta(days=10))
 
-    def test_get_measurements_throws_if_run_id_does_not_exist(self):
+    def test_get_measurements_throws_if_run_id_does_not_exist_neg(self):
         # assert
         self.assertRaises(ValueError, self.repo.get_measurements,
                           run_id=-1)
+
+    def test_get_measurements_throws_if_run_id_does_not_exist_pos(self):
+        # setup
+        rids = [r.run_id for r in self.repo.get_all_runs()]
+        rid  = 0
+        while rid in rids:
+            rid += 1
+
+        # assert
+        self.assertRaises(ValueError, self.repo.get_measurements,
+                          run_id=rid)
 
     def test_get_measurements_returns_past_thirty_if_no_date_range_is_given(self):
         # setup
@@ -277,24 +288,19 @@ class TestRepository(TestCase):
         measurements = self.repo.get_measurements(run_id=run.run_id, min_distance=100.)
         self.assertEqual(len(measurements), 10)
 
-    def test_get_measurements_returns_both_NOAA_and_USGS(self):
+    def test_get_measurements_returns_all_sources(self):
         # setup
         now = datetime.datetime.now()
 
-        addresses = self.session.query(Address).limit(2)
+        addresses = self.session.query(Address).limit(3)
         stations = [
             Station(
-                station_id='1',
-                latitude=addresses[0].latitude,
-                longitude=addresses[0].longitude,
-                source=self.context.weather_sources[0]
-            ),
-            Station(
-                station_id='2',
-                latitude=addresses[1].latitude,
-                longitude=addresses[1].longitude,
-                source=self.context.weather_sources[1]
+                station_id=str(i),
+                latitude=addresses[i].latitude,
+                longitude=addresses[i].longitude,
+                source=self.context.weather_sources[i]
             )
+            for i in range(len(self.context.weather_sources))
         ]
 
         run = RiverRun(

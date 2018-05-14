@@ -1,5 +1,5 @@
 from riverrunner import context
-from riverrunner.tests.test_context import TContext
+from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
 
 
