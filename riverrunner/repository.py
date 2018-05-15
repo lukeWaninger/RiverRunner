@@ -2,12 +2,16 @@ import datetime
 import pandas as pd
 from riverrunner import context
 from riverrunner.context import Measurement, Prediction, RiverRun, Station, StationRiverDistance
+from riverrunner import settings
 
 
 class Repository:
+    """interface between application and backend
+
+    """
     def __init__(self, session=None):
         if session is None:
-            self.__context = context.Context()
+            self.__context = context.Context(settings.DATABASE)
             self.__session = self.__context.Session()
         else:
             self.__session = session
@@ -17,12 +21,19 @@ class Repository:
         self.__session.close()
 
     def put_predictions(self, predictions):
-        """ add a set of predictions
-        session will rollback transaction if commit fails
+        """add a set of predictions
 
-        :param predictions: list, set of predictions to insert
-        :return: bool, success/fail
-        :raises: TypeError, if param predictions is not a list
+        Note:
+            session will rollback transaction if commit fails
+
+        Args:
+            predictions ([Prediction]): set of predictions to insert
+
+        Returns:
+            bool: success/fail
+
+        Raises:
+             TypeError: if predictions is not a list
         """
         if not type(predictions) is list:
             predictions = [predictions]
@@ -46,32 +57,28 @@ class Repository:
 
     def get_measurements(self, run_id, start_date=None, end_date=None, min_distance=0.):
         """ get a set of measurements from the db
-        behavior:
-        1) not supplying a start and end date will return measurements covering the
-        previous 30 days. add a start date to retrieve older
 
-        2) supplying a start date without and end date will pull all measurements
-        up to the current day
+        * not supplying a start and end date will return measurements covering the previous 30 days. add a start date to retrieve older
+        * supplying a start date without and end date will pull all measurements up to the current day
+        * if no min distance (or a negative distance) is provided the method will return measurements associated with the closest weather station from each unique source
+        * supplying a distance will NOT guarantee both NOAA and USGS stations are retrieved
+        * supplying an end date without a start will raise an exception
+        * supplying an end date earlier than the start will raise an exception
 
-        3) if no min distance (or a negative distance) is provided the method will
-        return measurements associated with the closest NOAA and USGS station
+        Args:
+            run_id (int): retrieve measurements associated with a specific run
+            start_date (DateTime) - optional: beginning of date range for which to retrieve measurements. if None is
+            supplied the function will default to retrieving the past thirty days
+            end_date (DateTime) - optional: end of date range for which to retrieve measurements
+            min_distance (float): distance from run for which to retrieve measurements
 
-        4) supplying a distance will NOT guarantee both NOAA and USGS stations are
-        retrieved
+        Returns:
+            DataFrame: containing measurements within the given set of parameters
 
-        5) supplying an end date without a start will raise an exception
-        6) supplying an end date earlier than the start will raise an exception
-
-        :param run_id: int, retrieve measurements associated with a specific run
-        :param start_date: datetime (optional), beginning of date range for which
-               to retrieve measurements. if None is supplied the function will
-               default to retrieving the past thirty days
-        :param end_date: datetime (optional), end of date range for which to
-               retrieve measurements
-        :param min_distance: float, distance from run for which to retrieve measurements
-        :return: DataFrame, containing measurements within the given set of parameters
-        :raises: ValueError, if start date is later than end date or start date is
-              later than today
+        Raises:
+             ValueError: if start date is later than end date
+             ValueError: if start date is is later than current date
+             ValueError: if end date is supplied without a starting date
         """
         # ensure dates are correct
         if start_date is not None:
@@ -143,9 +150,10 @@ class Repository:
         return df
 
     def get_all_runs(self):
-        """ retrieve all runs from the db
+        """retrieve all runs from the db
 
-        :return: DataFrame, containing all runs
+        Returns:
+            DataFrame: containing all runs
         """
 
         runs = pd.DataFrame([r.dict for r in self.__session.query(RiverRun).all()])

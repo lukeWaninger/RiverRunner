@@ -1,4 +1,3 @@
-from riverrunner import settings
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy import Column, Integer, String, Float, DateTime, Index, ForeignKey, ForeignKeyConstraint
@@ -7,14 +6,24 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 
+""" SQLAlchemy declarative base for ORM features """
 Base = declarative_base()
 
 
-class Context:
-    """ a connection to the database
+class Context(object):
+    """generate a managed session with the database
 
+    Attributes:
+        Session (sqlalchemy.orm.sessionmaker): managed connection to database. `see more <http://docs.sqlalchemy.org/en/latest/orm/session.html>`_.
     """
-    def __init__(self, connection_string=settings.DATABASE):
+
+    def __init__(self, connection_string):
+        """initialize the connection
+
+        Args:
+            connection_string (dict): must contain {drivername,host,port,username,paassword,database}
+        """
+
         self.__engine = create_engine(URL(**connection_string))
 
         self.Session  = sessionmaker()
@@ -30,6 +39,17 @@ class Context:
 
 
 class Address(Base):
+    """ORM mapping for addresses
+
+    Attributes:
+        address (str): street address limited to 255 characters
+        city (str): city name limited to 255 characters
+        county (str): county name limited to 255 characters
+        latitude (float): geographical latitude in decimal date format (DD)
+        longitude (float): geographical longit ude in decimal date format (DD)
+        state (str): two character state identifier
+        zip (str): zip code limited to 10 characters
+    """
     __tablename__ = 'address'
 
     latitude  = Column(Float, primary_key=True)
@@ -54,6 +74,14 @@ class Address(Base):
 
 
 class Measurement(Base):
+    """ORM mapping for measurements
+
+    Attributes:
+        date_time (DateTime): timestamp for when the measurement was taken
+        metric_id (int): reference to the metric gathered
+        station_id (str): reference to the weather station that gathered the measurement
+        value (float): the value recorded
+    """
     __tablename__ = 'measurement'
 
     date_time = Column(DateTime, primary_key=True)
@@ -67,7 +95,7 @@ class Measurement(Base):
     value = Column(Float)
 
     Index('idx_station', 'station_id')
-    Index('idx_date_time', 'date_time', unique=True)
+    Index('idx_date_time', 'date_time')
 
     def __repr__(self):
         return '<Measurement(station_id="%s", datetime="%s", metric="%s")>' % \
@@ -79,6 +107,7 @@ class Measurement(Base):
 
     @property
     def dict(self):
+        """dictionary representation of the measurement"""
         return {
             'date_time': self.date_time,
             'metric_id': self.metric_id,
@@ -89,6 +118,13 @@ class Measurement(Base):
 
 
 class Metric(Base):
+    """ORM mapping for metrics
+
+    Attributes:
+        metric_id (int): metric id
+        description (str): a short description of the metric
+        units (str): units the metric is gathered in
+    """
     __tablename__ = 'metric'
 
     metric_id = Column(Integer, primary_key=True)
@@ -105,6 +141,15 @@ class Metric(Base):
 
 
 class Prediction(Base):
+    """ORM mapping for predictions
+
+    Attributes:
+        run_id (int): reference to the river run this prediction is referencing
+        timestamp (DateTime): timestamp for the prediction
+        fr_lb (float): the lower bound of a confidence interval surrounding the prediction
+        fr (float): the predicted flow rate
+        fr_ub (float): the upper bound of a confidence interval surrounding the prediction
+    """
     __tablename__ = 'prediction'
 
     run_id = Column(ForeignKey('river_run.run_id'), primary_key=True)
@@ -123,6 +168,21 @@ class Prediction(Base):
 
 
 class RiverRun(Base):
+    """ORM mapping for a river run
+
+    Attributes:
+        run_id (int): id
+        class_rating (str): the run's white-water class rating
+        distance (float): the physical length of the run in miles
+        max_level (int): maximum recommended flow rate
+        min_level (int): minimum recommended flow rate
+        put_in_latitude (float): geographical latitude in decimal degree format (DD) representing where the run begins
+        put_in_longitude (float): geographical longitude (DD) representing where the run begins
+        river_name (str): the name of the river
+        run_name (str): the name of the run
+        take_out_latitude (float) geographical latitude (DD) representing where the run ends
+        take_out_longitude (float) geographical longitdue (DD) representing where the run ends
+    """
     __tablename__ = 'river_run'
 
     __table_args__ = (
@@ -168,6 +228,7 @@ class RiverRun(Base):
 
     @property
     def dict(self):
+        """dictionary representation of the river run"""
         return {
             'run_id': self.run_id,
             'class_rating': self.class_rating,
@@ -184,6 +245,12 @@ class RiverRun(Base):
 
 
 class State(Base):
+    """ORM mapping for a state
+
+    Attributes:
+        short_name (str): two letter state identification
+        long_name (str): full state name
+    """
     __tablename__ = 'state'
 
     short_name = Column(String(2), primary_key=True)
@@ -191,6 +258,15 @@ class State(Base):
 
 
 class Station(Base):
+    """ORM mapping for a weather station
+
+    Attributes:
+        station_id (string): id
+        source (string): the weather station's controlling authority {USGS, NOAA}
+        name (string): name
+        latitude (float): geographical latitude (DD)
+        longitude (float): geographical longitude (DD)
+    """
     __tablename__ = 'station'
 
     __table_args__ = (
@@ -220,6 +296,14 @@ class Station(Base):
 
 
 class StationRiverDistance(Base):
+    """ORM mapping describing distances between runs and stations
+
+    Attributes:
+        station_id (str): weather station id
+        run_id (int): river run id
+        put_in_distance (float): distance in miles from put-in to station
+        take_out_distance (float): distance in miles from take out-to station
+    """
     __tablename__ = 'station_river_distance'
 
     station_id = Column(ForeignKey('station.station_id'), primary_key=True)
@@ -231,4 +315,10 @@ class StationRiverDistance(Base):
 
     @hybrid_property
     def source(self):
+        """weather station source
+
+        This property is not stored in the backend. It is eager-loaded using a
+        join on Station when StationRiverDistance objects are returned from the
+        database
+        """
         return self.station.source
