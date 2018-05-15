@@ -1,7 +1,11 @@
 doc/_build/
+doc/_static/
+
 .idea/
 riverrunner/__pycache__
 riverrunner/data/
 
 settings.py
 client_secrets.json
+
+*.cache/
