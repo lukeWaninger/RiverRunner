@@ -6,11 +6,26 @@ import time
 
 
 class TContext(context.Context):
+    """mock database context
+
+    generates a mock database context for unit testing
+
+    Attributes:
+        weather_sources ([str]): list of possible weather sources
+    """
     def __init__(self):
         super().__init__(settings.DATABASE_TEST)
         self.weather_sources = ['NOAA', 'USGS', 'SNOW']
 
     def clear_dependency_data(self, session):
+        """clear all data from mock db
+
+        Args:
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Returns:
+            None
+        """
         self.clear_all_tables(session)
 
         session.query(context.Address).delete()
@@ -19,9 +34,17 @@ class TContext(context.Context):
 
     @staticmethod
     def clear_all_tables(session):
-        """ delete all rows from all tables in test database
+        """clear tables for unittest tear down
 
-        :return: None
+        it is important that order of entities below remain in this order.
+        if not, the SQL statements will not complete from foreign key
+        dependency issues
+
+        Args:
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Returns:
+            None
         """
         entities = [
             context.Prediction,
@@ -37,6 +60,16 @@ class TContext(context.Context):
         session.commit()
 
     def generate_addresses(self, session):
+        """generate a random set of addresses
+
+        generates and inserts a random set of addresses into the db
+
+        Args:
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Returns:
+            None
+        """
         # fill a few foreign key dependencies
         session.add(context.State(
             short_name='WA',
@@ -59,12 +92,14 @@ class TContext(context.Context):
         session.commit()
 
     def get_measurements_for_test(self, i, session):
-        """ generate a new set of measurements for unit test
+        """generate a random set of measurements
 
-        :param i: int, number of measurements to generate
-        :param session: context.Session(), the db session for which to pass
-        station and metric dependencies
-        :return: list, containing i Measurements
+        Args:
+            i (int): number of measurements to generate
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Return:
+             [Measurement]: list containing i random Measurements
         """
         stations = self.get_stations_for_test(i, session)
         session.add_all(stations)
@@ -91,10 +126,13 @@ class TContext(context.Context):
 
     @staticmethod
     def get_metrics_for_test(i):
-        """ generate a new set of measurements for unit test
+        """generate a random set of metrics
 
-        :param i: int, number of measurements to generate
-        :return: list, containing i Measurements
+        Args:
+            i (int): number of measurements to generate
+
+        Return:
+            [Metric]: list containing i random Measurements
         """
         return [
             context.Metric(
@@ -105,12 +143,14 @@ class TContext(context.Context):
             ) for mid in range(i)]
 
     def get_predictions_for_test(self, i, session):
-        """ generate a random set of predictions for unit test
+        """generate a random set of predictions
 
-        :param i: int, number of predictions to generate
-        :param session: context.Session(), db session for which to
-        add prediction dependencies
-        :return: list, containing i random predictions
+        Args:
+            i (int): number of predictions to generate
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Return:
+            [Prediction]: list containing i random predictions
         """
         runs = self.get_runs_for_test(i, session)
         session.add_all(runs)
@@ -138,11 +178,14 @@ class TContext(context.Context):
 
     @staticmethod
     def get_runs_for_test(i, session):
-        """ generate a random set of runs for unit test
+        """generate a random set of runs
 
-        :param i: int, number of runs to generate
-        :param session: context.Session(), database session to query addresses
-        :return: list, containing runs
+        Args:
+            i (int): number of runs to generate
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Returns:
+            [RiverRun]: list containing i random runs
         """
         addresses = session.query(context.Address).all()
         runs = []
@@ -166,11 +209,14 @@ class TContext(context.Context):
 
     @staticmethod
     def get_stations_for_test(i, session):
-        """ generate a random set of stations for unit test
+        """generate a random set of weather stations
 
-        :param i: int, number of stations to generate
-        :param session: context.Session(), database session to query addresses
-        :return: list, containing i Stations
+        Args:
+            i (int): number of stations to generate
+            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+
+        Returns:
+            [Station]: list containing i random stations
         """
         addresses = session.query(context.Address).all()
 
@@ -190,16 +236,18 @@ class TContext(context.Context):
 
     @staticmethod
     def random_latitude():
-        """ generate a random latitude
+        """generate a random latitude
 
-        :return: float, a random latitude
+        Returns:
+            float: a random latitude within the state of Washington
         """
         return np.round(np.random.uniform(46, 49, 1), 3)[0]
 
     @staticmethod
     def random_longitude():
-        """ generate a random longitude
+        """generate a random longitude
 
-        :return: float, a random longitude
+        Returns:
+            float: a random longitude within the state of Washington
         """
         return np.round(np.random.uniform(-124, -117, 1), 3)[0]

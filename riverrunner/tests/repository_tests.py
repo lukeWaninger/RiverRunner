@@ -1,4 +1,5 @@
 import datetime
+import numpy as np
 from riverrunner import context
 from riverrunner.context import Address, Measurement, Metric, RiverRun, Station, StationRiverDistance
 from riverrunner.repository import Repository
@@ -7,8 +8,25 @@ from unittest import TestCase
 
 
 class TestRepository(TestCase):
+    """test class for repository.py
+
+    Attributes:
+        context (TContext): mock database context
+        session (sqlalchemy.orm.sessionmaker): managed connection to that context
+        repo (riverrunner.Repository): class being tested
+    """
+
     @classmethod
     def setUpClass(cls):
+        """perform at test class initialization
+
+        Note:
+            * ensure only a TContext is used NEVER Context or we'll lose all
+            our hard-scraped data
+            * any existing data in the mock db will be deleted
+            * 5 random addresses are generated because nearly all unittests
+            require addresses to exist as a foreign key dependency
+        """
         cls.context = TContext()
         cls.session = cls.context.Session()
         cls.repo = Repository(session=cls.session)
@@ -18,13 +36,23 @@ class TestRepository(TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """perform when all tests are complete
+
+        removes all data from the mock database
+        """
         cls.context.clear_dependency_data(cls.session)
         cls.session.close()
 
     def tearDown(self):
+        """perform after each unittest
+
+        clears Prediction, StationRiverDistance, Measurement, Metric
+        Station, RiverRun tables
+        """
         self.context.clear_all_tables(self.session)
 
     def test_put_predictions_adds_one(self):
+        """test put_predictions can add one prediction"""
         # setup
         predictions = self.context.get_predictions_for_test(1, self.session)
 
@@ -33,6 +61,7 @@ class TestRepository(TestCase):
         self.assertTrue(result)
 
     def test_put_predictions_adds_many(self):
+        """test put_predictions can add many predictions at once"""
         # setup
         predictions = self.context.get_predictions_for_test(10, self.session)
 
@@ -41,6 +70,7 @@ class TestRepository(TestCase):
         self.assertTrue(result)
 
     def test_clear_predictions_empties_table(self):
+        """test clearing all predictions from db"""
         # setup
         predictions = self.context.get_predictions_for_test(10, self.session)
         self.repo.put_predictions(predictions)
@@ -51,6 +81,11 @@ class TestRepository(TestCase):
         self.assertEqual(len(predictions), 0)
 
     def test_get_measurements_returns_with_correct_date_range(self):
+        """test get_measurements exceptions
+
+        test that the method correctly throws an exception if it's
+        given an invalid date range
+        """
         # setup
         now = datetime.datetime.now()
 
@@ -115,6 +150,11 @@ class TestRepository(TestCase):
             self.assertTrue(now - datetime.timedelta(days=16) <= m[1].date_time < now - datetime.timedelta(days=14))
 
     def test_get_measurements_throws_if_start_is_later_than_end(self):
+        """test get_measurements exceptions
+
+        test that the method correctly throws an exception if it's
+        given an invalid date range
+        """
         # setup
         runs = self.context.get_runs_for_test(1, self.session)
         self.session.add_all(runs)
@@ -127,6 +167,11 @@ class TestRepository(TestCase):
                           end_date=now - datetime.timedelta(days=15))
 
     def test_get_measurements_throws_if_start_is_later_than_today(self):
+        """test get_measurements exceptions
+
+        test that the method correctly throws an exception if it's
+        given an invalid date range
+        """
         # setup
         runs = self.context.get_runs_for_test(1, self.session)
         self.session.add_all(runs)
@@ -138,11 +183,21 @@ class TestRepository(TestCase):
                           start_date=now + datetime.timedelta(days=10))
 
     def test_get_measurements_throws_if_run_id_does_not_exist_neg(self):
+        """test get_measurements exceptions
+
+        test that the method will throw an error when a given run
+        id does not exist in the db and the given id is negative
+        """
         # assert
         self.assertRaises(ValueError, self.repo.get_measurements,
                           run_id=-1)
 
     def test_get_measurements_throws_if_run_id_does_not_exist_pos(self):
+        """test get_measurements exceptions
+
+        test that the method will throw an error when a given run
+        id does not exist in the db and the given id is positive
+        """
         # setup
         rids = [r.run_id for r in self.repo.get_all_runs()]
         rid  = 0
@@ -154,6 +209,11 @@ class TestRepository(TestCase):
                           run_id=rid)
 
     def test_get_measurements_returns_past_thirty_if_no_date_range_is_given(self):
+        """test get_measurements behavior
+
+        test that the method returns only the past thirty days
+        if no date range is given as a calling argument
+        """
         # setup
         now = datetime.datetime.now()
 
@@ -216,6 +276,7 @@ class TestRepository(TestCase):
             self.assertTrue(m[1].date_time >= now - datetime.timedelta(30))
 
     def test_get_measurements_returns_from_more_than_one_station(self):
+        """test that more than one station is return when necessary"""
         # setup
         now = datetime.datetime.now()
 
@@ -343,7 +404,7 @@ class TestRepository(TestCase):
         for i in range(10):
             measurements.append(
                 Measurement(
-                    station_id=stations[i % 2].station_id,
+                    station_id=stations[i % len(stations)].station_id,
                     metric_id=metric.metric_id,
                     date_time=now - datetime.timedelta(days=15, seconds=5 * i)
                 )
@@ -354,10 +415,10 @@ class TestRepository(TestCase):
 
         # assert
         measurements = self.repo.get_measurements(run_id=run.run_id)
-        self.assertTrue('NOAA' in measurements.source.values)
-        self.assertTrue('USGS' in measurements.source.values)
+        self.assertTrue(set(self.context.weather_sources) == set(measurements.source.values))
 
     def test_get_all_runs(self):
+        """test whether all runs are returned"""
         # setup
         runs = self.context.get_runs_for_test(2, self.session)
         self.session.add_all(runs)
@@ -365,3 +426,122 @@ class TestRepository(TestCase):
         # assert
         runs = self.repo.get_all_runs()
         self.assertEqual(len(runs), 2)
+
+    def test_get_measurements_specific_range_1(self):
+        """unittest for specific range
+
+        test whether a given date range is returning all sources
+        and all measurements [2009-01-01, 2016, 01, 01] | run_id=500
+        """
+
+        # setup
+        addresses = self.session.query(Address).all()
+        stations = []
+        for i in range(100):
+            soid = i % len(self.context.weather_sources)
+            aid  = i % len(addresses)
+
+            stations.append(Station(
+                station_id=str(i),
+                latitude=addresses[aid].latitude,
+                longitude=addresses[aid].longitude,
+                source=self.context.weather_sources[soid]
+            ))
+
+        runs = []
+        for i in range(300, 600):
+            pid = np.random.randint(0, 997) % len(addresses)
+            tid = np.random.randint(0, 997) % len(addresses)
+
+            runs.append(
+                RiverRun(
+                    run_id=i,
+                    put_in_latitude=addresses[pid].latitude,
+                    put_in_longitude=addresses[pid].longitude,
+                    class_rating='I',
+                    max_level=100,
+                    min_level=10,
+                    take_out_latitude=addresses[tid].latitude,
+                    take_out_longitude=addresses[tid].longitude,
+                    distance=10,
+                    river_name=f'a river {i}',
+                    run_name=f'a run {i}'
+                )
+            )
+
+        strds, stations_per_run = [], 4  # four to ensure all sources exist for each run
+        for r in runs:
+            spr = stations_per_run
+            sidx = np.random.randint(0, len(stations)-4)
+
+            for s in stations[sidx: sidx + stations_per_run]:
+                d = ((s.latitude-r.put_in_latitude)**2+(s.longitude-r.put_in_longitude)**2)**.5
+                strds.append(
+                    StationRiverDistance(
+                        station_id=s.station_id,
+                        run_id=r.run_id,
+                        put_in_distance=d,
+                        take_out_distance=d
+                    )
+                )
+                spr -= 1
+                if spr == 0:
+                    break
+
+        metric_names = [
+            'Streamflow',
+            'Sensor Depth',
+            'Water Velocity',
+            'Precipitation (USGS)',
+            'Temperature (USGS)',
+            'Precipitation (NOAA)',
+            'Precipitation (USGS)',
+            'Snowpack'
+        ]
+        metrics = []
+        for i, n in enumerate(metric_names):
+            metrics.append(
+                Metric(
+                    description='a description',
+                    metric_id=i,
+                    name=n,
+                    units='a scalar'
+                )
+            )
+
+        self.session.add_all(stations)
+        self.session.add_all(runs)
+        self.session.add_all(strds)
+        self.session.add_all(metrics)
+        self.session.commit()
+
+        measurements = []
+        day, start, end = -10, datetime.datetime(2009, 1, 1), datetime.datetime(2016, 1, 1)
+        quit = end + datetime.timedelta(days=10)
+
+        while True:
+            md = start + datetime.timedelta(days=day)
+
+            measurements.append(
+                Measurement(
+                    station_id=stations[day % len(stations)].station_id,
+                    metric_id=metrics[day % len(metrics)].metric_id,
+                    date_time=md,
+                    value=day
+                )
+            )
+
+            day += 1
+            if md >= quit:
+                break
+
+        [self.session.merge(m) for m in measurements]
+        self.session.commit()
+
+        # assert
+        measurements = self.repo.get_measurements(run_id=500, start_date=start, end_date=end)
+
+        for m in measurements.iterrows():
+            self.assertTrue(start <= m[1].date_time < end)
+
+        self.assertTrue(set(self.context.weather_sources) == set(measurements.source.values))
