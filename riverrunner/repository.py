@@ -109,11 +109,11 @@ class Repository:
 
         # define the stations we need to reference
         stations = self.__session.query(StationRiverDistance.station_id,
-                                        StationRiverDistance.put_in_distance,
+                                        StationRiverDistance.distance,
                                         Station.source)\
             .join(Station, (Station.station_id == StationRiverDistance.station_id))\
             .filter(StationRiverDistance.run_id == run_id)\
-            .order_by(StationRiverDistance.put_in_distance)\
+            .order_by(StationRiverDistance.distance)\
             .all()
 
         # make sure at least one of each weather source is returned
@@ -150,7 +150,7 @@ class Repository:
         return df
 
     def get_all_runs(self):
-        """retrieve all runs from the db
+        """retrieve all runs from db
 
         Returns:
             DataFrame: containing all runs
@@ -158,3 +158,32 @@ class Repository:
 
         runs = pd.DataFrame([r.dict for r in self.__session.query(RiverRun).all()])
         return runs
+
+    def get_all_stations(self):
+        """retrieve all weather stations from db
+
+        Returns:
+            DataFrame: containing all weather stations
+        """
+
+        stations = pd.DataFrame([s.dict for s in self.__session.query(Station).all()])
+        return stations
+
+    def put_station_river_distances(self, strd):
+        """put station river distance objects in the db
+
+        Args:
+            strd ([StationRiverDistance]): list of StationRiverDistances to add
+        """
+        if not type(strd) is list:
+            strd = [strd]
+
+        try:
+            self.__session.add_all(strd)
+            self.__session.commit()
+
+            return True
+        except Exception as e:
+            self.__session.rollback()
+
+            return False

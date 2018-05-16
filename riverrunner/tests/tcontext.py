@@ -21,7 +21,7 @@ class TContext(context.Context):
         """clear all data from mock db
 
         Args:
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Returns:
             None
@@ -41,7 +41,7 @@ class TContext(context.Context):
         dependency issues
 
         Args:
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Returns:
             None
@@ -65,7 +65,7 @@ class TContext(context.Context):
         generates and inserts a random set of addresses into the db
 
         Args:
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Returns:
             None
@@ -96,7 +96,7 @@ class TContext(context.Context):
 
         Args:
             i (int): number of measurements to generate
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Return:
              [Measurement]: list containing i random Measurements
@@ -147,11 +147,11 @@ class TContext(context.Context):
 
         Args:
             i (int): number of predictions to generate
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Return:
             [Prediction]: list containing i random predictions
-        """
+      """
         runs = self.get_runs_for_test(i, session)
         session.add_all(runs)
         session.commit()
@@ -182,7 +182,7 @@ class TContext(context.Context):
 
         Args:
             i (int): number of runs to generate
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Returns:
             [RiverRun]: list containing i random runs
@@ -213,7 +213,7 @@ class TContext(context.Context):
 
         Args:
             i (int): number of stations to generate
-            session (sqlalchemy.orm.sessionmaker): managed connection to mock db
+            session (Session): managed connection to mock db
 
         Returns:
             [Station]: list containing i random stations

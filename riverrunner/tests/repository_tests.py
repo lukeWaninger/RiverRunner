@@ -5,6 +5,7 @@ from riverrunner.context import Address, Measurement, Metric, RiverRun, Station,
 from riverrunner.repository import Repository
 from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
+from unittest import skip
 
 
 class TestRepository(TestCase):
@@ -93,7 +94,8 @@ class TestRepository(TestCase):
         station = Station(
             station_id='1',
             latitude=address.latitude,
-            longitude=address.longitude
+            longitude=address.longitude,
+            source='NOAA'
         )
 
         run = RiverRun(
@@ -113,8 +115,7 @@ class TestRepository(TestCase):
         strd = StationRiverDistance(
             station_id=station.station_id,
             run_id=run.run_id,
-            put_in_distance=1.,
-            take_out_distance=1.
+            distance=1.
         )
 
         metric = Metric(
@@ -242,8 +243,7 @@ class TestRepository(TestCase):
         strd = StationRiverDistance(
             station_id=station.station_id,
             run_id=run.run_id,
-            put_in_distance=1.,
-            take_out_distance=1.
+            distance=1.
         )
 
         metric = Metric(
@@ -314,8 +314,7 @@ class TestRepository(TestCase):
             StationRiverDistance(
                 station_id=s.station_id,
                 run_id=run.run_id,
-                put_in_distance=1.,
-                take_out_distance=1.
+                distance=1.
             )
             for s in stations
         ]
@@ -382,8 +381,7 @@ class TestRepository(TestCase):
             StationRiverDistance(
                 station_id=s.station_id,
                 run_id=run.run_id,
-                put_in_distance=1.,
-                take_out_distance=1.
+                distance=1.
             )
             for s in stations
         ]
@@ -427,6 +425,42 @@ class TestRepository(TestCase):
         runs = self.repo.get_all_runs()
         self.assertEqual(len(runs), 2)
 
+    def test_get_all_stations(self):
+        """test whether all stations are returned"""
+        # setup
+        stations = self.context.get_stations_for_test(10, self.session)
+        self.session.add_all(stations)
+
+        # assert
+        stations = self.repo.get_all_stations()
+        self.assertEqual(len(stations), 10)
+
+    def put_station_river_distances(self):
+        """test whether station river distances persists to db"""
+        # setup
+        stations = self.context.get_stations_for_test(10, self.session)
+        runs = self.context.get_runs_for_test(10, self.session)
+
+        self.session.add_all(stations)
+        self.session.add_all(runs)
+        self.session.commit()
+        
+        # assert
+        strds = [
+            StationRiverDistance(
+                station_id=stations[np.random.randint(0, len(stations))].station_id,
+                run_id=runs[np.random.randint(0, len(runs))].run_id,
+                distance=4
+            )
+            for i in range(10)
+        ]
+
+        strds = self.repo.put_station_river_distances(strds)
+        strds = self.session.query(StationRiverDistance).all()
+
+        self.assertEqual(len(strds), 10)
+
+    @skip("passed 15 May 18, test takes ~50seconds so skip")
     def test_get_measurements_specific_range_1(self):
         """unittest for specific range
 
@@ -480,8 +514,7 @@ class TestRepository(TestCase):
                     StationRiverDistance(
                         station_id=s.station_id,
                         run_id=r.run_id,
-                        put_in_distance=d,
-                        take_out_distance=d
+                        distance=d
                     )
                 )
                 spr -= 1

@@ -5,6 +5,8 @@ import re
 import requests
 import pandas as pd
 from riverrunner import settings
+from riverrunner.context import StationRiverDistance
+from riverrunner.repository import Repository
 
 
 def scrape_rivers_urls():
@@ -267,7 +269,7 @@ def parse_addresses_and_stations_from_precip():
     pd.DataFrame(stations).to_csv('data/stations_precip.csv', index=None)
 
 
-def get_distance_between_geo_points(lat1, lon1, lat2, lon2):
+def get_distance_between_geo_points(lat1, lon1, lat2, lon2, run_id, station_id, source):
     r = 6373.0
 
     lat1 = radians(lat1)
@@ -281,33 +283,57 @@ def get_distance_between_geo_points(lat1, lon1, lat2, lon2):
     a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
-    return (r * c)*0.621371  # convert km to miles
+    return {
+       'distance': (r * c)*0.621371,
+       'station': station_id,
+       'run': run_id,
+       'source': source
+    }
 
 
 def compute_station_river_distances():
-    stations = pd.read_csv('data/stations.csv')
-    rivers = pd.read_csv('data/rivers.csv')
-    distances = []
+    repo = Repository()
 
-    for station in stations.iterrows():
-        sx, sy = station[1]['latitude'], station[1]['longitude']
+    runs = repo.get_all_runs()
+    stations = repo.get_all_stations()
 
-        for river in rivers.iterrows():
-            entry = {
-                'station_id': station[1]['station_id'],
-                'river_id': river[1]['river_id']
-            }
+    # foreach run, find the close USGS, NOAA, and SNOW station
+    for run in runs.iterrows():
+        distances = stations.apply(lambda row: get_distance_between_geo_points(
+            run[1].put_in_latitude,
+            run[1].put_in_longitude,
+            row.latitude,
+            row.longitude,
+            run[1].run_id,
+            row.station_id,
+            row.source
+        ), axis=1).apply(pd.Series)
 
-            # compute distance from put in
-            rx, ry = river[1]['put_in_lat'], river[1]['put_in_long']
-            entry['put_in_distance'] = get_distance_between_geo_points(sx, sy, rx, ry)
+        distances.sort_values('distance', inplace=True)
 
-            # compute distance from take out
-            rx, ry = river[1]['take_out_lat'], river[1]['take_out_long']
-            entry['take_out_distance'] = get_distance_between_geo_points(sx, sy, rx, ry)
-            distances.append(entry)
+        usgs_ = distances[distances.source == 'USGS'].iloc[0, :]
+        noaa_ = distances[distances.source == 'NOAA'].iloc[0, :]
+        snow_ = distances[distances.source == 'SNOW'].iloc[0, :]
 
-    pd.DataFrame(distances).to_csv('data/distances.csv', index=None)
+        usgs = StationRiverDistance(
+                station_id=usgs_.station,
+                run_id=run[1].run_id,
+                distance=round(float(usgs_.distance), 2)
+            )
+
+        noaa = StationRiverDistance(
+                station_id=noaa_.station,
+                run_id=run[1].run_id,
+                distance=round(float(noaa_.distance), 2)
+            )
+
+        snow = StationRiverDistance(
+                station_id=snow_.station,
+                run_id=run[1].run_id,
+                distance=round(float(snow_.distance), 2)
+            )
+
+        repo.put_station_river_distances([usgs, noaa, snow])
 
 
 def parse_addresses_and_stations_from_usgs():
@@ -333,3 +359,7 @@ def parse_addresses_and_stations_from_usgs():
 
     pd.DataFrame(addresses).to_csv('data/addresses_usgs.csv', index=None)
     pd.DataFrame(stations).to_csv('data/stations_usgs.csv', index=None)
+
+
+if __name__ == '__main__':
+    compute_station_river_distances()
