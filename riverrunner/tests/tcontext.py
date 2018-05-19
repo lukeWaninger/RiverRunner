@@ -1,5 +1,6 @@
 import datetime
 import numpy as np
+import os
 from riverrunner import context
 from riverrunner import settings
 import time
@@ -16,6 +17,7 @@ class TContext(context.Context):
     def __init__(self):
         super().__init__(settings.DATABASE_TEST)
         self.weather_sources = ['NOAA', 'USGS', 'SNOW']
+        self.measurements_file_name = "measurements_file_for_test.csv"
 
     def clear_dependency_data(self, session):
         """clear all data from mock db
@@ -123,6 +125,32 @@ class TContext(context.Context):
             time.sleep(.001)
 
         return measurements
+
+    def get_measurements_file_for_test(self, i, session):
+        """generate a file with a random set of measurements
+
+        Args:
+            i (int): number of measurements to generate
+            session (Session): managed connection to mock db
+
+        Return:
+            file: file containing i random Measurements
+        """
+        measurements = self.get_measurements_for_test(i, session)
+        with open(self.measurements_file_name, "w") as f:
+            for measurement in measurements:
+                f.write("{},{},{},{}\n".format(
+                    measurement.date_time,
+                    measurement.metric_id,
+                    measurement.station_id,
+                    measurement.value
+                ))
+
+        return self.measurements_file_name
+
+    def remove_measurements_file_for_test(self):
+        """remove file used for put_measurements tests"""
+        os.remove(self.measurements_file_name)
 
     @staticmethod
     def get_metrics_for_test(i):

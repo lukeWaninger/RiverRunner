@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
-from riverrunner import context
+import psycopg2
+from riverrunner import context, settings
 from riverrunner.context import Address, Measurement, Metric, RiverRun, Station, StationRiverDistance
 from riverrunner.repository import Repository
 from riverrunner.tests.tcontext import TContext
@@ -30,7 +31,8 @@ class TestRepository(TestCase):
         """
         cls.context = TContext()
         cls.session = cls.context.Session()
-        cls.repo = Repository(session=cls.session)
+        cls.connection = psycopg2.connect(**settings.PSYCOPG_DB_TEST)
+        cls.repo = Repository(session=cls.session, connection=cls.connection)
 
         cls.context.clear_dependency_data(cls.session)
         cls.context.generate_addresses(cls.session)
@@ -80,6 +82,77 @@ class TestRepository(TestCase):
         self.repo.clear_predictions()
         predictions = self.session.query(context.Prediction).all()
         self.assertEqual(len(predictions), 0)
+
+    def test_put_measurements_add_new(self):
+        """test put_measurements adds new values"""
+        # setup
+        self.context.get_measurements_file_for_test(1, self.session)
+
+        # assert
+        self.repo.put_measurements(self.context.measurements_file_name)
+        measurements = self.session.query(context.Measurement).all()
+        self.assertEqual(len(measurements), 1)
+
+        # tear down
+        self.context.remove_measurements_file_for_test()
+
+    def test_put_measurements_overwrite_old(self):
+        """test put_measurements overwrites old values"""
+        # setup
+        self.context.get_measurements_file_for_test(1, self.session)
+        self.repo.put_measurements(self.context.measurements_file_name)
+        with open(self.context.measurements_file_name, "r") as f:
+            measurement = f.readline().strip().split(",")
+            new_value = float(measurement[3]) + 1
+            measurement[3] = str(new_value)
+            new_measurement = "{}\n".format(",".join(measurement))
+        with open(self.context.measurements_file_name, "w") as f:
+            f.write(new_measurement)
+
+        # assert
+        self.repo.put_measurements(self.context.measurements_file_name)
+        measurements = self.session.query(context.Measurement).all()
+        self.assertEqual(len(measurements), 1)
+        self.assertEqual(measurements[0].value, new_value)
+
+        # tear down
+        self.context.remove_measurements_file_for_test()
+
+    def test_put_measurements_checks_integrity(self):
+        """test put_measurements checks referential integrity"""
+        # setup
+        self.context.get_measurements_file_for_test(1, self.session)
+        self.repo.put_measurements(self.context.measurements_file_name)
+        with open(self.context.measurements_file_name, "r") as f:
+            measurement = f.readline().strip().split(",")
+            measurement[2] = "{}0".format(measurement[2])
+            diff_measurement = "{}\n".format(",".join(measurement))
+        with open(self.context.measurements_file_name, "w") as f:
+            f.write(diff_measurement)
+
+        # assert
+        with self.assertRaises(psycopg2.IntegrityError):
+            self.repo.put_measurements(self.context.measurements_file_name)
+        measurements = self.session.query(context.Measurement).all()
+        tmp_measurements = self.session.query(context.TmpMeasurement).all()
+        self.assertEqual(len(measurements), 1)
+        self.assertEqual(len(tmp_measurements), 0)
+
+        # tear down
+        self.context.remove_measurements_file_for_test()
+
+    def test_put_measurements_clears_tmp_measurement_table(self):
+        """test put_measurements completes with empty tmp_measurement table"""
+        # setup
+        self.context.get_measurements_file_for_test(1, self.session)
+        self.repo.put_measurements(self.context.measurements_file_name)
+
+        # assert
+        tmp_measurements = self.session.query(context.TmpMeasurement).all()
+        self.assertEqual(len(tmp_measurements), 0)
+
+        # tear down
+        self.context.remove_measurements_file_for_test()
 
     def test_get_measurements_returns_with_correct_date_range(self):
         """test get_measurements exceptions

@@ -2,9 +2,9 @@ doc/_build/
 doc/_static/
 
 .idea/
-riverrunner/__pycache__
 riverrunner/data/
 
+__pycache__
 settings.py
 client_secrets.json
 
