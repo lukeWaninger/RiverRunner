@@ -1,11 +1,9 @@
 import datetime
 import pandas as pd
 import requests
-from riverrunner.context import Context, Measurement
-from riverrunner.repository import Repository
 from riverrunner import settings
-import sys
-import time
+from riverrunner.context import Measurement
+from riverrunner.repository import Repository
 
 
 def get_noaa_predictions(run_id, session):
@@ -40,6 +38,7 @@ def make_station_observation_request(station, day):
     Returns:
         response
     """
+    now = datetime.datetime.now().isoformat()
     base = 'https://api.darksky.net/forecast'
     r = requests.get(f'{base}/{settings.DARK_SKY}/{station.latitude},{station.longitude},{day}')
 
@@ -81,9 +80,10 @@ def make_station_observation_request(station, day):
                     date_time=timestamp
                 )
             )
-
+        print(f'{now}: {station.station_id} complete')
         return measurements
     else:
+        print(f'{now}: {station.station_id} failed')
         return None
 
 
@@ -94,7 +94,7 @@ def put_24hr_observations(session):
         session (Session): database session
     """
     repo = Repository(session)
-    stations = repo.get_all_stations()
+    stations = repo.get_all_stations(source='NOAA')
 
     yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
     yesterday = datetime.datetime(year=yesterday.year, month=yesterday.month, day=yesterday.day)
@@ -111,31 +111,3 @@ def put_24hr_observations(session):
         added += len(station_measurements)
     
     return added
-
-
-def daily_run(attempt=0):
-    """input the past 24 hr observations and write to log"""
-    try:
-        if attempt >= settings.DARK_SKY_RETRIES:
-            return 1
-
-        context = Context(settings.DATABASE_TEST)
-        session = context.Session()
-        
-        added = put_24hr_observations(session)
-        session.close()
-        
-        with open('observation_log.txt', 'a+') as f:
-            f.write(f'{datetime.datetime.now().isoformat()}: added {added} observations to db\n')
-
-        sys.exit(0)
-    except:
-        with open('observation_log.txt', 'a+') as f:
-            f.write(f'{datetime.datetime.now().isoformat()}: failed to pull past 24hr measurements\n')
-        time.sleep(600)
-        daily_run(attempt+1)
-        sys.exit(1)
-
-
-if __name__ == '__main__':
-    daily_run(0)

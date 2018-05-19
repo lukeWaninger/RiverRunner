@@ -223,15 +223,21 @@ class Repository:
         runs = pd.DataFrame([r.dict for r in self.__session.query(RiverRun).all()])
         return runs
 
-    def get_all_stations(self):
+    def get_all_stations(self, source=None):
         """retrieve all weather stations from db
 
         Returns:
             DataFrame: containing all weather stations
         """
+        if source is not None:
+            stations = self.__session.query(Station).filter(
+                Station.source == source
+            ).all()
+        else:
+            stations = self.__session.query(Station.dict).all()
 
-        stations = pd.DataFrame([s.dict for s in self.__session.query(Station).all()])
-        return stations
+        stations = list(map(lambda s: s.dict, stations))
+        return pd.DataFrame(stations)
 
     def put_station_river_distances(self, strd):
         """put station river distance objects in the db
