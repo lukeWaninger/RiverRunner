@@ -1,5 +1,6 @@
 import datetime
 import numpy as np
+import pandas as pd
 from riverrunner import context
 from riverrunner.context import Address, Measurement, Metric, RiverRun, Station, StationRiverDistance
 from riverrunner.repository import Repository
@@ -13,7 +14,7 @@ class TestRepository(TestCase):
 
     Attributes:
         context (TContext): mock database context
-        session (sqlalchemy.orm.sessionmaker): managed connection to that context
+        session (Session): managed connection to that context
         repo (riverrunner.Repository): class being tested
     """
 
@@ -43,6 +44,11 @@ class TestRepository(TestCase):
         """
         cls.context.clear_dependency_data(cls.session)
         cls.session.close()
+
+    def setUp(self):
+        """perform before each unittest"""
+        self.session.flush()
+        self.session.rollback()
 
     def tearDown(self):
         """perform after each unittest

@@ -1,8 +1,10 @@
 import datetime
 import pandas as pd
+import requests
 from riverrunner import context
 from riverrunner.context import Measurement, Prediction, RiverRun, Station, StationRiverDistance
 from riverrunner import settings
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Repository:
@@ -93,19 +95,8 @@ class Repository:
         if end_date is None:
             end_date = datetime.datetime.now()
 
-        # ensure the run_id exists if it was supplied
-        def raise_rid_error():
-            raise ValueError('run_id does not exist: %s' % run_id)
-
-        if run_id > -1:
-            try:
-                run = self.__session.query(RiverRun.run_id).filter(RiverRun.run_id == run_id).first()
-                if run is None:
-                    raise_rid_error()
-            except Exception as e:
-                raise_rid_error()
-        else:
-            raise_rid_error()
+        # make sure the run exists
+        run = self.get_run(run_id)
 
         # define the stations we need to reference
         stations = self.__session.query(StationRiverDistance.station_id,
@@ -187,3 +178,25 @@ class Repository:
             self.__session.rollback()
 
             return False
+
+    def get_run(self, run_id):
+        """retrieve a single run
+
+        Args
+            run_id (int): run id
+        """
+        if run_id < 0:
+            raise ValueError('run id does not exist')
+        else:
+            pass
+
+        try:
+            run = self.__session.query(RiverRun).filter(RiverRun.run_id == run_id).scalar()
+
+            if run is None:
+                raise ValueError('run id does not exist')
+
+            return run
+        except SQLAlchemyError as e:
+            print([str(a) for a in e.args])
+            raise e
