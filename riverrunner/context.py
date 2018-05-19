@@ -320,7 +320,7 @@ class StationRiverDistance(Base):
     station = relationship('Station')
 
     run_id = Column(ForeignKey('river_run.run_id'), primary_key=True)
-    distance   = Column(Float)
+    distance = Column(Float)
 
     @hybrid_property
     def source(self):
