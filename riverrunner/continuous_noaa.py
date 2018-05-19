@@ -134,6 +134,7 @@ def daily_run(attempt=0):
             f.write(f'{datetime.datetime.now().isoformat()}: failed to pull past 24hr measurements\n')
         time.sleep(600)
         daily_run(attempt+1)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
