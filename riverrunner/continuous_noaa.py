@@ -1,9 +1,11 @@
 import datetime
 import pandas as pd
 import requests
-from riverrunner.context import Measurement
+from riverrunner.context import Context, Measurement
 from riverrunner.repository import Repository
 from riverrunner import settings
+import sys
+import time
 
 
 def get_noaa_predictions(run_id, session):
@@ -103,5 +105,36 @@ def put_24hr_observations(session):
     ).values
 
     # put them all in the db
+    added = 0
     for station_measurements in content:
         repo.put_measurements_from_list(station_measurements)
+        added += len(station_measurements)
+    
+    return added
+
+
+def daily_run(attempt=0):
+    """input the past 24 hr observations and write to log"""
+    try:
+        if attempt >= settings.DARK_SKY_RETRIES:
+            return 1
+
+        context = Context(settings.DATABASE_TEST)
+        session = context.Session()
+        
+        added = put_24hr_observations(session)
+        session.close()
+        
+        with open('observation_log.txt', 'a+') as f:
+            f.write(f'{datetime.datetime.now().isoformat()}: added {added} observations to db\n')
+
+        sys.exit(0)
+    except:
+        with open('observation_log.txt', 'a+') as f:
+            f.write(f'{datetime.datetime.now().isoformat()}: failed to pull past 24hr measurements\n')
+        time.sleep(600)
+        daily_run(attempt+1)
+
+
+if __name__ == '__main__':
+    daily_run(0)
