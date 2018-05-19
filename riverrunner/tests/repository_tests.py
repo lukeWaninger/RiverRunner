@@ -95,7 +95,7 @@ class TestRepository(TestCase):
         self.context.get_measurements_file_for_test(1, self.session)
 
         # assert
-        self.repo.put_measurements(self.context.measurements_file_name)
+        self.repo.put_measurements_from_csv(self.context.measurements_file_name)
         measurements = self.session.query(context.Measurement).all()
         self.assertEqual(len(measurements), 1)
 
@@ -106,7 +106,7 @@ class TestRepository(TestCase):
         """test put_measurements overwrites old values"""
         # setup
         self.context.get_measurements_file_for_test(1, self.session)
-        self.repo.put_measurements(self.context.measurements_file_name)
+        self.repo.put_measurements_from_csv(self.context.measurements_file_name)
         with open(self.context.measurements_file_name, "r") as f:
             measurement = f.readline().strip().split(",")
             new_value = float(measurement[3]) + 1
@@ -116,7 +116,7 @@ class TestRepository(TestCase):
             f.write(new_measurement)
 
         # assert
-        self.repo.put_measurements(self.context.measurements_file_name)
+        self.repo.put_measurements_from_csv(self.context.measurements_file_name)
         measurements = self.session.query(context.Measurement).all()
         self.assertEqual(len(measurements), 1)
         self.assertEqual(measurements[0].value, new_value)
@@ -128,7 +128,7 @@ class TestRepository(TestCase):
         """test put_measurements checks referential integrity"""
         # setup
         self.context.get_measurements_file_for_test(1, self.session)
-        self.repo.put_measurements(self.context.measurements_file_name)
+        self.repo.put_measurements_from_csv(self.context.measurements_file_name)
         with open(self.context.measurements_file_name, "r") as f:
             measurement = f.readline().strip().split(",")
             measurement[2] = "{}0".format(measurement[2])
@@ -138,7 +138,7 @@ class TestRepository(TestCase):
 
         # assert
         with self.assertRaises(psycopg2.IntegrityError):
-            self.repo.put_measurements(self.context.measurements_file_name)
+            self.repo.put_measurements_from_csv(self.context.measurements_file_name)
         measurements = self.session.query(context.Measurement).all()
         tmp_measurements = self.session.query(context.TmpMeasurement).all()
         self.assertEqual(len(measurements), 1)
@@ -151,7 +151,7 @@ class TestRepository(TestCase):
         """test put_measurements completes with empty tmp_measurement table"""
         # setup
         self.context.get_measurements_file_for_test(1, self.session)
-        self.repo.put_measurements(self.context.measurements_file_name)
+        self.repo.put_measurements_from_csv(self.context.measurements_file_name)
 
         # assert
         tmp_measurements = self.session.query(context.TmpMeasurement).all()
@@ -658,3 +658,14 @@ class TestRepository(TestCase):
             self.assertTrue(start <= m[1].date_time < end)
 
         self.assertTrue(set(self.context.weather_sources) == set(measurements.source.values))
+
+    def test_put_measurements_from_list(self):
+        """test whether the put measurments from list puts correctly"""
+        # setup
+        measurements = self.context.get_measurements_for_test(24, self.session)
+        self.session.add_all(measurements)
+        self.session.commit()
+
+        # assert
+        measurements = self.session.query(Measurement).all()
+        self.assertEqual(24, len(measurements))

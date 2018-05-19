@@ -1,6 +1,5 @@
 import datetime
 import pandas as pd
-import re
 import requests
 from riverrunner.context import Measurement
 from riverrunner.repository import Repository
@@ -39,7 +38,8 @@ def make_station_observation_request(station, day):
     Returns:
         response
     """
-    r = requests.get(f'https://api.darksky.net/forecast/{settings.DARK_SKY}/{station.latitude},{station.longitude},{day}')
+    base = 'https://api.darksky.net/forecast'
+    r = requests.get(f'{base}/{settings.DARK_SKY}/{station.latitude},{station.longitude},{day}')
 
     if r.status_code == 200:
         content = r.json()
@@ -85,7 +85,7 @@ def make_station_observation_request(station, day):
         return None
 
 
-def get_24hr_observations(session):
+def put_24hr_observations(session):
     """get yesterdays observations
 
     Args
@@ -102,7 +102,6 @@ def get_24hr_observations(session):
         axis=1
     ).values
 
-
-    print()
-
-
+    # put them all in the db
+    for station_measurements in content:
+        repo.put_measurements_from_list(station_measurements)

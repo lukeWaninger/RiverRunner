@@ -11,7 +11,7 @@ class Repository:
     """interface between application and backend
 
     """
-    def __init__(self, session=None):
+    def __init__(self, session=None, connection=None):
         if session is None:
             self.__context = context.Context(settings.DATABASE)
             self.__session = self.__context.Session()
@@ -31,16 +31,16 @@ class Repository:
     def put_predictions(self, predictions):
         """add a set of predictions
 
-        Note:
+        Note
             session will rollback transaction if commit fails
 
-        Args:
+        Args
             predictions ([Prediction]): set of predictions to insert
 
-        Returns:
+        Returns
             bool: success/fail
 
-        Raises:
+        Raises
              TypeError: if predictions is not a list
         """
         if not type(predictions) is list:
@@ -57,13 +57,14 @@ class Repository:
             return False
 
     def clear_predictions(self):
-        """ delete all existing predictions from database
+        """delete all existing predictions from database
 
-        :return: None
+        Returns
+         None
         """
         self.__session.query(Prediction).delete()
 
-    def put_measurements(self, csv_file):
+    def put_measurements_from_csv(self, csv_file):
         """ add a file of measurements
 
         Notes:
@@ -100,6 +101,23 @@ class Repository:
             self.__connection.rollback()
 
             raise
+
+    def put_measurements_from_list(self, measurements):
+        """add a list of measurements to the database
+
+        Args
+            measurements [Measurement]: list of measurements to put in the db
+
+        Returns
+            None
+        """
+        try:
+            self.__session.add_all(measurements)
+            self.__session.commit()
+        except SQLAlchemyError as e:
+            print([str(a) for a in e.args])
+            self.__session.rollback()
+            raise e
 
     def get_measurements(self, run_id, start_date=None, end_date=None, min_distance=0.):
         """ get a set of measurements from the db
@@ -198,7 +216,7 @@ class Repository:
     def get_all_runs(self):
         """retrieve all runs from db
 
-        Returns:
+        Returns
             DataFrame: containing all runs
         """
 

@@ -127,7 +127,7 @@ class Metric(Base):
     """
     __tablename__ = 'metric'
 
-    metric_id = Column(Integer, primary_key=True)
+    metric_id = Column(String(31), primary_key=True)
 
     description = Column(String(255))
     name  = Column(String(255))
