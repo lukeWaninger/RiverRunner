@@ -320,7 +320,7 @@ class StationRiverDistance(Base):
     station = relationship('Station')
 
     run_id = Column(ForeignKey('river_run.run_id'), primary_key=True)
-    distance   = Column(Float)
+    distance = Column(Float)
 
     @hybrid_property
     def source(self):
@@ -331,3 +331,25 @@ class StationRiverDistance(Base):
         database
         """
         return self.station.source
+
+
+class TmpMeasurement(Base):
+    """ORM mapping for temporary measurements
+
+    Attributes:
+        date_time (DateTime): timestamp for when the measurement was taken
+        metric_id (int): reference to the metric gathered
+        station_id (str): reference to the weather station that gathered the measurement
+        value (float): the value recorded
+    """
+    __tablename__ = "tmp_measurement"
+
+    date_time = Column(DateTime, primary_key=True)
+
+    metric_id = Column(ForeignKey('metric.metric_id'), primary_key=True)
+    metric    = relationship('Metric')
+
+    station_id = Column(ForeignKey('station.station_id'), primary_key=True)
+    station = relationship('Station')
+
+    value = Column(Float, primary_key=True)
