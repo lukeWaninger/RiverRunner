@@ -1,10 +1,10 @@
 import datetime
 import pandas as pd
 import psycopg2
-
 from riverrunner import context
 from riverrunner.context import Measurement, Prediction, RiverRun, Station, StationRiverDistance
 from riverrunner import settings
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Repository:
@@ -31,16 +31,16 @@ class Repository:
     def put_predictions(self, predictions):
         """add a set of predictions
 
-        Note:
+        Note
             session will rollback transaction if commit fails
 
-        Args:
+        Args
             predictions ([Prediction]): set of predictions to insert
 
-        Returns:
+        Returns
             bool: success/fail
 
-        Raises:
+        Raises
              TypeError: if predictions is not a list
         """
         if not type(predictions) is list:
@@ -57,13 +57,14 @@ class Repository:
             return False
 
     def clear_predictions(self):
-        """ delete all existing predictions from database
+        """delete all existing predictions from database
 
-        :return: None
+        Returns
+         None
         """
         self.__session.query(Prediction).delete()
 
-    def put_measurements(self, csv_file):
+    def put_measurements_from_csv(self, csv_file):
         """ add a file of measurements
 
         Notes:
@@ -100,6 +101,23 @@ class Repository:
             self.__connection.rollback()
 
             raise
+
+    def put_measurements_from_list(self, measurements):
+        """add a list of measurements to the database
+
+        Args
+            measurements [Measurement]: list of measurements to put in the db
+
+        Returns
+            None
+        """
+        try:
+            self.__session.add_all(measurements)
+            self.__session.commit()
+        except SQLAlchemyError as e:
+            print([str(a) for a in e.args])
+            self.__session.rollback()
+            raise e
 
     def get_measurements(self, run_id, start_date=None, end_date=None, min_distance=0.):
         """ get a set of measurements from the db
@@ -198,22 +216,28 @@ class Repository:
     def get_all_runs(self):
         """retrieve all runs from db
 
-        Returns:
+        Returns
             DataFrame: containing all runs
         """
 
         runs = pd.DataFrame([r.dict for r in self.__session.query(RiverRun).all()])
         return runs
 
-    def get_all_stations(self):
+    def get_all_stations(self, source=None):
         """retrieve all weather stations from db
 
         Returns:
             DataFrame: containing all weather stations
         """
+        if source is not None:
+            stations = self.__session.query(Station).filter(
+                Station.source == source
+            ).all()
+        else:
+            stations = self.__session.query(Station.dict).all()
 
-        stations = pd.DataFrame([s.dict for s in self.__session.query(Station).all()])
-        return stations
+        stations = list(map(lambda s: s.dict, stations))
+        return pd.DataFrame(stations)
 
     def put_station_river_distances(self, strd):
         """put station river distance objects in the db
@@ -233,3 +257,25 @@ class Repository:
             self.__session.rollback()
 
             return False
+
+    def get_run(self, run_id):
+        """retrieve a single run
+
+        Args
+            run_id (int): run id
+        """
+        if run_id < 0:
+            raise ValueError('run id does not exist')
+        else:
+            pass
+
+        try:
+            run = self.__session.query(RiverRun).filter(RiverRun.run_id == run_id).scalar()
+
+            if run is None:
+                raise ValueError('run id does not exist')
+
+            return run
+        except SQLAlchemyError as e:
+            print([str(a) for a in e.args])
+            raise e
