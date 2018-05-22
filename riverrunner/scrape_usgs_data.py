@@ -3,7 +3,7 @@
 Examples:
     python scrape_usgs_data.py --manual start-date end-date
 
-    * scrapes and uploads data over the specified date range
+    * scrapes and uploads data over the specified date range (inclusive)
     * start-date and end-date must be in the format 'YYYY-MM-DD'
 
     python scrape_usgs_data.py --daily days-back
@@ -13,6 +13,7 @@ Examples:
 """
 
 import datetime
+import dateutil
 import json
 import requests
 import sys
@@ -27,29 +28,24 @@ USGS_BASE_URL = "https://waterservices.usgs.gov/nwis/iv/"
 USGS_FORMAT = "json"
 USGS_SITE_STATUS = "all"
 
+PARAM_CODES = [
+    "00021",
+    "00045",
+    "00060",
+    "72147",
+    "72254"
+]
 
 def get_site_ids():
-    """ retrieve site ids from file
+    """ retrieve site ids from database
 
     Returns:
         [string]: list of site ids
     """
-    site_ids = []
-    with open(DATA_DIR + "usgs_site_ids.csv", "r") as f:
-        site_ids = [line.strip() for line in f]
+    r = repository.Repository()
+    sites = r.get_all_stations(source="USGS")
+    site_ids = [s for s in sites["station_id"]]
     return site_ids
-
-
-def get_param_codes():
-    """ retrieve parameter codes from file
-
-    Returns:
-        [string]: list of parameter codes
-    """
-    param_codes = []
-    with open(DATA_DIR + "usgs_param_codes.csv", "r") as f:
-        param_codes = [line.strip() for line in f]
-    return param_codes
 
 
 def get_json_data(site_id, start_date, end_date, param_code):
@@ -100,7 +96,7 @@ def scrape_usgs_data(start_date, end_date):
     start_date_file_ext = start_date.replace("-", "")
     end_date_file_ext = end_date.replace("-", "")
     site_ids = get_site_ids()
-    param_codes = get_param_codes()
+    param_codes = PARAM_CODES
     out_files = []
     for param_code in param_codes:
         total_values = 0
@@ -130,17 +126,35 @@ def scrape_usgs_data(start_date, end_date):
     return out_files
 
 
-def upload_data_from_file(csv_file):
+def upload_data_from_file(csv_file, from_csv=False):
     """ insert all records contained in file to database
 
     Args:
         csv_file (string): full path of CSV file containing records
+        from_csv (bool): whether to insert into database using CSV or ORM
 
     Returns:
         bool: success/exception
     """
     r = repository.Repository()
-    success = r.put_measurements(csv_file=csv_file)
+
+    if from_csv:
+        success = r.put_measurements_from_csv(csv_file=csv_file)
+
+    else:
+        measurements = []
+        with open(csv_file, "r") as f:
+            for line in f:
+                site_id, param_code, date_time, value = line.strip().split(",")
+                measurement = context.Measurement(
+                    station_id=site_id,
+                    metric_id=param_code,
+                    date_time=dateutil.parser.parse(date_time),
+                    value=float(value)
+                )
+                measurements.append(measurement)
+        success = r.put_measurements_from_list(measurements=measurements)
+
     return success
 
 
