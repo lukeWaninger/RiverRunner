@@ -2,13 +2,10 @@ import datetime
 import numpy as np
 import psycopg2
 from riverrunner import context, settings
-import pandas as pd
-from riverrunner import context
 from riverrunner.context import Address, Measurement, Metric, RiverRun, Station, StationRiverDistance
 from riverrunner.repository import Repository
 from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
-from unittest import skip
 
 
 class TestRepository(TestCase):
@@ -33,7 +30,8 @@ class TestRepository(TestCase):
         """
         cls.context = TContext()
         cls.session = cls.context.Session()
-        cls.repo = Repository(session=cls.session)
+        cls.connection = psycopg2.connect(**settings.PSYCOPG_DB_TEST)
+        cls.repo = Repository(session=cls.session, connection=cls.connection)
 
         cls.context.clear_dependency_data(cls.session)
         cls.context.generate_addresses(cls.session)
@@ -46,6 +44,7 @@ class TestRepository(TestCase):
         """
         cls.context.clear_dependency_data(cls.session)
         cls.session.close()
+        cls.connection.close()
 
     def setUp(self):
         """perform before each unittest"""
@@ -509,6 +508,7 @@ class TestRepository(TestCase):
         # setup
         stations = self.context.get_stations_for_test(10, self.session)
         self.session.add_all(stations)
+        self.session.commit()
 
         # assert
         stations = self.repo.get_all_stations()
@@ -539,7 +539,6 @@ class TestRepository(TestCase):
 
         self.assertEqual(len(strds), 10)
 
-    @skip("passed 15 May 18, test takes ~50seconds so skip")
     def test_get_measurements_specific_range_1(self):
         """unittest for specific range
 

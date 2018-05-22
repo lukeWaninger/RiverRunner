@@ -97,9 +97,9 @@ class Repository:
             self.__connection.commit()
 
             return True
-        except:
+        except Exception as e:
+            print([str(a) for a in e.args])
             self.__connection.rollback()
-
             raise
 
     def put_measurements_from_list(self, measurements):
@@ -234,9 +234,9 @@ class Repository:
                 Station.source == source
             ).all()
         else:
-            stations = self.__session.query(Station.dict).all()
+            stations = self.__session.query(Station).all()
 
-        stations = list(map(lambda s: s.dict, stations))
+        stations = [s.dict for s in stations]
         return pd.DataFrame(stations)
 
     def put_station_river_distances(self, strd):

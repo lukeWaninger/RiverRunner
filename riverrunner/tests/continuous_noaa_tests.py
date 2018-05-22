@@ -90,7 +90,8 @@ class TestRepository(TestCase):
         station1 = Station(
             station_id='KAWO',
             latitude=address1.latitude,
-            longitude=address1.longitude
+            longitude=address1.longitude,
+            source='NOAA'
         )
 
         address2 = Address(
@@ -100,7 +101,8 @@ class TestRepository(TestCase):
         station2 = Station(
             station_id='KGEG',
             latitude=address2.latitude,
-            longitude=address2.longitude
+            longitude=address2.longitude,
+            source='NOAA'
         )
 
         self.session.add_all([
