@@ -3,6 +3,7 @@ doc/_static/
 
 .idea/
 riverrunner/data/
+*.csv
 
 __pycache__
 settings.py
