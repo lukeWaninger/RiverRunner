@@ -1,3 +1,6 @@
+plotly
+dash
+teamcity-messages
 Babel==2.5.3
 Jinja2==2.10
 MarkupSafe==1.0

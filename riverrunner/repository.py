@@ -24,102 +24,56 @@ class Repository:
             self.__connection = connection
 
     def __del__(self):
-        self.__session.flush()
         self.__session.close()
         self.__connection.close()
 
-    def put_predictions(self, predictions):
-        """add a set of predictions
-
-        Note
-            session will rollback transaction if commit fails
-
-        Args
-            predictions ([Prediction]): set of predictions to insert
-
-        Returns
-            bool: success/fail
-
-        Raises
-             TypeError: if predictions is not a list
-        """
-        if not type(predictions) is list:
-            predictions = [predictions]
-
-        try:
-            self.__session.add_all(predictions)
-            self.__session.commit()
-
-            return True
-        except:
-            self.__session.rollback()
-
-            return False
-
-    def clear_predictions(self):
+    def clear_predictions(self, run_id):
         """delete all existing predictions from database
 
         Returns
          None
         """
-        self.__session.query(Prediction).delete()
+        self.__session.query(Prediction).filter(Prediction.run_id == run_id).delete()
 
-    def put_measurements_from_csv(self, csv_file):
-        """ add a file of measurements
-
-        Notes:
-            * will overwrite previous values with same primary key
-            * connection will rollback transaction if commit fails
-
-        Args:
-            csv_file (file): name of file containing records to insert
-
-        Returns:
-            bool: success/exception
-
-        Raises:
-            Exception: if error occurs while connected to database
-        """
-        try:
-            with self.__connection.cursor() as cursor:
-                with open(csv_file, "r") as f:
-                    cursor.copy_from(f, "tmp_measurement", sep=",")
-                cursor.execute("""
-                    INSERT into measurement
-                        SELECT * FROM tmp_measurement
-                    ON CONFLICT (station_id, metric_id, date_time)
-                        DO UPDATE SET value = EXCLUDED.value;
-                """)
-                cursor.execute("""
-                    DELETE FROM tmp_measurement;
-                """)
-
-            self.__connection.commit()
-
-            return True
-        except Exception as e:
-            print([str(a) for a in e.args])
-            self.__connection.rollback()
-            raise
-
-    def put_measurements_from_list(self, measurements):
-        """add a list of measurements to the database
-
-        Args
-            measurements [Measurement]: list of measurements to put in the db
+    def get_all_runs(self):
+        """retrieve all runs from db
 
         Returns
-            None
+            DataFrame: containing all runs
+        """
+
+        runs = pd.DataFrame([r.dict for r in self.__session.query(RiverRun).all()])
+        return runs
+
+    def get_all_runs_as_list(self):
+        """returns all runs as select list
+
+        Returns
+            [{'label', 'value'}]: list of select options for drop down
         """
         try:
-            self.__session.add_all(measurements)
-            self.__session.commit()
+            return self.__session.query(RiverRun).all()
         except SQLAlchemyError as e:
             print([str(a) for a in e.args])
             self.__session.rollback()
-            raise e
 
-    def get_measurements(self, run_id, start_date=None, end_date=None, min_distance=0.):
+    def get_all_stations(self, source=None):
+        """retrieve all weather stations from db
+
+        Returns:
+            DataFrame: containing all weather stations
+        """
+        if source is not None:
+            stations = self.__session.query(Station).filter(
+                Station.source == source
+            ).all()
+        else:
+            stations = self.__session.query(Station).all()
+
+        stations = [s.dict for s in stations]
+        return pd.DataFrame(stations)
+
+    def get_measurements(self, run_id, start_date=None, end_date=None, min_distance=0., metric_ids=None):
         """ get a set of measurements from the db
 
         * not supplying a start and end date will return measurements covering the previous 30 days. add a start date to retrieve older
@@ -134,7 +88,8 @@ class Repository:
             start_date (DateTime) - optional: beginning of date range for which to retrieve measurements. if None is
             supplied the function will default to retrieving the past thirty days
             end_date (DateTime) - optional: end of date range for which to retrieve measurements
-            min_distance (float): distance from run for which to retrieve measurements
+            min_distance (float) - optional: distance from run for which to retrieve measurements
+            metric_ids ([str]) - optional: list of metric ids to filter
 
         Returns:
             DataFrame: containing measurements within the given set of parameters
@@ -174,10 +129,10 @@ class Repository:
         # define the stations we need to reference
         stations = self.__session.query(StationRiverDistance.station_id,
                                         StationRiverDistance.distance,
-                                        Station.source)\
-            .join(Station, (Station.station_id == StationRiverDistance.station_id))\
-            .filter(StationRiverDistance.run_id == run_id)\
-            .order_by(StationRiverDistance.distance)\
+                                        Station.source) \
+            .join(Station, (Station.station_id == StationRiverDistance.station_id)) \
+            .filter(StationRiverDistance.run_id == run_id) \
+            .order_by(StationRiverDistance.distance) \
             .all()
 
         # make sure at least one of each weather source is returned
@@ -204,59 +159,22 @@ class Repository:
         station_ids = [s[0] for s in stations]
 
         # make the query
-        measurements = self.__session.query(Measurement)\
-            .filter(Measurement.station_id.in_(station_ids),
-                    Measurement.date_time >= start_date,
-                    Measurement.date_time < end_date)\
-            .all()
+        if metric_ids is None:
+            measurements = self.__session.query(Measurement) \
+                .filter(Measurement.date_time >= start_date,
+                        Measurement.date_time < end_date,
+                        Measurement.station_id.in_(station_ids), ) \
+                .all()
+        else:
+            measurements = self.__session.query(Measurement) \
+                .filter(Measurement.date_time >= start_date,
+                        Measurement.date_time < end_date,
+                        Measurement.station_id.in_(station_ids),
+                        Measurement.metric_id.in_(metric_ids)) \
+                .all()
 
         df = pd.DataFrame([m.dict for m in measurements])
         return df
-
-    def get_all_runs(self):
-        """retrieve all runs from db
-
-        Returns
-            DataFrame: containing all runs
-        """
-
-        runs = pd.DataFrame([r.dict for r in self.__session.query(RiverRun).all()])
-        return runs
-
-    def get_all_stations(self, source=None):
-        """retrieve all weather stations from db
-
-        Returns:
-            DataFrame: containing all weather stations
-        """
-        if source is not None:
-            stations = self.__session.query(Station).filter(
-                Station.source == source
-            ).all()
-        else:
-            stations = self.__session.query(Station).all()
-
-        stations = [s.dict for s in stations]
-        return pd.DataFrame(stations)
-
-    def put_station_river_distances(self, strd):
-        """put station river distance objects in the db
-
-        Args:
-            strd ([StationRiverDistance]): list of StationRiverDistances to add
-        """
-        if not type(strd) is list:
-            strd = [strd]
-
-        try:
-            self.__session.add_all(strd)
-            self.__session.commit()
-
-            return True
-        except Exception as e:
-            self.__session.rollback()
-
-            return False
 
     def get_run(self, run_id):
         """retrieve a single run
@@ -279,3 +197,89 @@ class Repository:
         except SQLAlchemyError as e:
             print([str(a) for a in e.args])
             raise e
+
+    def put_measurements_from_csv(self, csv_file):
+        """ add a file of measurements
+
+        Notes:
+            * will overwrite previous values with same primary key
+            * connection will rollback transaction if commit fails
+
+        Args:
+            csv_file (file): name of file containing records to insert
+
+        Returns:
+            bool: success/exception
+
+        Raises:
+            Exception: if error occurs while connected to database
+        """
+        try:
+            with self.__connection.cursor() as cursor:
+                with open(csv_file, "r") as f:
+                    cursor.copy_from(f, "tmp_measurement", sep=",")
+                cursor.execute("""
+                    INSERT into measurement
+                        SELECT * FROM tmp_measurement
+                    ON CONFLICT (station_id, metric_id, date_time)
+                        DO UPDATE SET value = EXCLUDED.value;
+                """)
+                cursor.execute("""
+                    DELETE FROM tmp_measurement;
+                """)
+
+            self.__connection.commit()
+
+            return True
+        except:
+            self.__connection.rollback()
+
+            raise
+
+    def put_measurements_from_list(self, measurements):
+        """add a list of measurements to the database
+
+        Args
+            measurements [Measurement]: list of measurements to put in the db
+
+        Returns
+            None
+        """
+        try:
+            self.__session.add_all(measurements)
+            self.__session.commit()
+        except SQLAlchemyError as e:
+            print([str(a) for a in e.args])
+            self.__session.rollback()
+            raise e
+
+    def put_predictions(self, predictions):
+        """add a set of predictions
+
+        Args
+            predictions ([Prediction]): set of predictions to insert
+        """
+        if not type(predictions) is list:
+            predictions = [predictions]
+
+        self.__session.add_all(predictions)
+        self.__session.commit()
+
+    def put_station_river_distances(self, strd):
+        """put station river distance objects in the db
+
+        Args:
+            strd ([StationRiverDistance]): list of StationRiverDistances to add
+        """
+        if not type(strd) is list:
+            strd = [strd]
+
+        try:
+            self.__session.add_all(strd)
+            self.__session.commit()
+
+            return True
+        except Exception as e:
+            self.__session.rollback()
+
+            return False

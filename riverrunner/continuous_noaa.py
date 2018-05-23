@@ -2,7 +2,7 @@ import datetime
 import pandas as pd
 import requests
 from riverrunner import settings
-from riverrunner.context import Measurement
+from riverrunner.context import Context, Measurement
 from riverrunner.repository import Repository
 
 
@@ -111,3 +111,33 @@ def put_24hr_observations(session):
         added += len(station_measurements)
     
     return added
+
+
+def run_me():
+    day = datetime.datetime(year=2018, month=5, day=18)
+    end = datetime.datetime(year=2018, month=5, day=19)
+
+    context = Context(settings.DATABASE)
+    session = context.Session()
+
+    repo = Repository(session)
+    stations = repo.get_all_stations(source='NOAA')
+
+    while day != end:
+        content = stations.apply(
+            lambda station: make_station_observation_request(station, day.isoformat()),
+            axis=1
+        ).values
+
+        # put them all in the db
+        added = 0
+        for station_measurements in content:
+            try:
+                repo.put_measurements_from_list(station_measurements)
+            except:
+                session.rollback()
+                continue
+            added += len(station_measurements)
+
+        print(f'added {added} - {day.isoformat()}')
+        day += datetime.timedelta(days=1)

@@ -21,19 +21,21 @@ from riverrunner.repository import Repository
 from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.stattools import arma_order_select_ic
 
-repo = Repository()
-
 
 class Arima:
     """
     Creates predictions for future flow rate using ARIMA model
     """
-    def get_data(self, run_id):
+    def __init__(self):
+        self.repo = Repository()
+
+    def get_data(self, run_id, metric_ids=None):
         """Retrieves data for selected run from database for past four years
         from current date using Repository.get_measurements function.
 
         Args:
             run_id (int): id of run for which model will be created
+            metric_ids ([str]) - optional: list of metric ids to include
 
         Returns:
             DataFrame: containing four years of measurements up to current date
@@ -42,7 +44,9 @@ class Arima:
         now = datetime.datetime.now()
         end = datetime.datetime(now.year, now.month, now.day)
         start = end - datetime.timedelta(days=4*365)
-        test_measures = repo.get_measurements(run_id=run_id, start_date=start, end_date=end)
+        test_measures = self.repo.get_measurements(
+            run_id=run_id, start_date=start, end_date=end, metric_ids=metric_ids
+        )
         return test_measures
 
     def daily_avg(self, run_id):
@@ -57,7 +61,7 @@ class Arima:
         Returns:
             DataFrame: containing daily measurements
         """
-        time_series = self.get_data(run_id=run_id)
+        time_series = self.get_data(run_id=run_id, metric_ids=['00003', '00060', '00001'])
 
         precip = time_series[time_series.metric_id == '00003']
         precip['date_time'] = pd.to_datetime(precip['date_time'], utc=True)
@@ -74,8 +78,8 @@ class Arima:
         temp.index = temp['date_time']
         temp_daily = temp.resample('D').mean()
 
-        time_series_daily = temp_daily.merge(flow_daily, how='inner', left_index=True,
-                                             right_index=True)\
+        time_series_daily = temp_daily\
+            .merge(flow_daily,   how='inner', left_index=True, right_index=True) \
             .merge(precip_daily, how='inner', left_index=True, right_index=True)
         time_series_daily.columns = ['temp', 'flow', 'precip']
         time_series_daily = time_series_daily.dropna()
@@ -111,8 +115,7 @@ class Arima:
                             order=(params.aic_min_order[0], 0, params.aic_min_order[1]),
                             exog=measures[['temp', 'precip']]).fit()
                 prediction = pd.DataFrame(
-                    [mod.forecast(steps=7, exog=exog_future_predictors[['temp', 'precip']],
-                                                        alpha=0.05)[0]]).T
+                    [mod.forecast(steps=7, exog=exog_future_predictors[['temp', 'precip']], alpha=0.05)[0]]).T
             except Exception:
                 # If model doesn't converge, return "prediction" of most recent day
                 prediction = pd.concat([measures.iloc[-1, :].to_frame().T] * 7,
@@ -126,7 +129,8 @@ class Arima:
         prediction_dates = [measures.index[-2] + datetime.timedelta(days=x) for x in range(0, 7)]
         prediction.index = prediction_dates
         past = measures['flow'][-22:-1]
-        prediction = pd.concat([past, prediction], axis=0)
+        prediction = pd.concat([past[:-1], prediction], axis=0)
+
         return prediction
 
     def get_min_max(self, run_id):
@@ -138,6 +142,6 @@ class Arima:
         Returns:
             levels: minimum and maximum runnable flow rate for river
         """
-        runs = repo.get_all_runs()
+        runs = self.repo.get_all_runs()
         levels = runs[['min_level', 'max_level']][runs['run_id'] == run_id]
         return levels
