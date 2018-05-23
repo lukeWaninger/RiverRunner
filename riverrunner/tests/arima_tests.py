@@ -41,7 +41,7 @@ class TestArima(unittest.TestCase):
         # assert
         self.assertFalse(averages.isnull().any().any())
 
-    def test_arima_model_returns_28_days_flow_rate(self):
+    def test_arima_model_returns_27_days_flow_rate(self):
         """
         Test that arima_model function returns 7 predictions + 21 past flow rates
         Returns: results of test
@@ -50,7 +50,7 @@ class TestArima(unittest.TestCase):
         predictions = self.arima.arima_model(run_id=386)
 
         # assert
-        self.assertTrue(len(predictions) == 28)
+        self.assertTrue(len(predictions) == 27)
 
     def test_arima_model_still_returns_prediction_if_order_select_fails(self):
         """
