@@ -41,16 +41,13 @@ def get_weather_observations(session, attempt=0):
 
 
 def get_usgs_observations():
-    today = datetime.date.today()
-    end_date = today - datetime.timedelta(days=1)
-    start_date = end_date - datetime.timedelta(days=1)
-    end_date = end_date.isoformat()
-    start_date = start_date.isoformat()
+    yesterday = datetime.date.today() - datetime.timedelta(days=1)
+    end_date = yesterday.isoformat()
 
-    csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
+    csv_files = scrape_usgs_data(start_date=end_date, end_date=end_date)
     for csv_file in csv_files:
         log("uploading {}...".format(csv_file))
-        upload_data_from_file(csv_file)
+        upload_data_from_file(csv_file=csv_file)
 
 
 def compute_predictions(session):

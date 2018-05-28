@@ -1,15 +1,18 @@
 """ script that scrapes and uploads USGS data
 
 Examples:
-    python scrape_usgs_data.py --manual start-date end-date
+    python scrape_usgs_data.py [--csv] --manual start-date end-date
 
     * scrapes and uploads data over the specified date range (inclusive)
     * start-date and end-date must be in the format 'YYYY-MM-DD'
+    * optional argument to insert records into database from CSV file
 
-    python scrape_usgs_data.py --daily days-back
+    python scrape_usgs_data.py [--csv] --daily [days-back]
 
-    * scrapes and uploads data from days-back before yesterday to yesterday
-    * days-back must be an integer
+    * scrapes and uploads data over date range
+    * date range is from days-back before yesterday to yesterday (inclusive)
+    * optional days-back parameter must be an integer (defaults to 0)
+    * optional argument to insert records into database from CSV file
 """
 
 import datetime
@@ -159,14 +162,22 @@ def upload_data_from_file(csv_file, from_csv=False):
 
 
 if __name__ == "__main__":
-    # python scrape_usgs_data.py --manual start-date end-date
-    # python scrape_usgs_data.py --daily days-back
+    # python scrape_usgs_data.py [--csv] --manual start-date end-date
+    # python scrape_usgs_data.py [--csv] --daily [days-back]
 
-    if sys.argv[1] == "--manual":
-        start_date, end_date = sys.argv[2:]
+    from_csv = False
+    if sys.argv[1] == "--csv":
+        from_csv = True
 
-    elif sys.argv[1] == "--daily":
-        days_back = int(sys.argv[2])
+    if "--manual" in sys.argv[1:3]:
+        index = sys.argv.index("--manual")
+        start_date, end_date = sys.argv[index+1:]
+
+    elif "--daily" in sys.argv[1:3]:
+        index = sys.argv.index("--daily")
+        days_back = 0
+        if len(sys.argv) > index + 1:
+            days_back = int(sys.argv[index+1])
         today = datetime.date.today()
         end_date = today - datetime.timedelta(days=1)
         start_date = end_date - datetime.timedelta(days=days_back)
@@ -176,4 +187,4 @@ if __name__ == "__main__":
     csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
     for csv_file in csv_files:
         print("uploading {}...".format(csv_file))
-        success = upload_data_from_file(csv_file)
+        success = upload_data_from_file(csv_file=csv_file, from_csv=from_csv)
