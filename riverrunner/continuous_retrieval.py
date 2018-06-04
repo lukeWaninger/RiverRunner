@@ -128,7 +128,7 @@ def get_usgs_json_data(site_id, start_date, end_date, param_code):
         param_code (string): string representation of parameter code
 
     Returns:
-        {string: string}: map relating timestamps to values
+        dict[string, string]: map relating timestamps to values
     """
     params = {
         "format": USGS_FORMAT,

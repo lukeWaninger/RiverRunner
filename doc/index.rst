@@ -15,8 +15,10 @@ state of Washington.
    :align: right
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   functional_specification/functional_specification.md
+   design_specification/design_specification.md
    data_abstraction/index.rst
    repository/index.rst
    continuous_retrieval/index.rst

@@ -1,6 +1,6 @@
-# RiverRunner - Whitewater Kayaking Predictions - Functional Specifications
+# Functional Specification
 
-## BACKGROUND
+## Background
 
 Whitewater kayaking is a popular sport around Washington state where there are many runnable rivers within a short drive from urban areas. What draws many people to the sport is its dynamic nature; it is fast paced and intense, and even running the same stretch of river can be a totally different experience each time depending on the flow conditions. Many river's flow rates change quickly and dramatically, meaning paddlers must be ready to adapt to rapidly changing conditions and able to determine whether a river is runnable. A river that may be an easy class III today might be a more difficult class IV or entirely unrunnable tomorrow.
 
@@ -10,18 +10,18 @@ With RiverRunner, the goal is to provide paddlers in Washington<sup>1</sup> with
 
 <sub><sup>1</sup>The current scope of the RiverRunner project only includes predictions for whitewater runs in Washington State. Depending on the success of the models and demand, this could potentially be expanded to include rivers in other states in the future.</sub>
 
-## USERS
+## Users
 
 The target users of RiverRunner are individuals who whitewater kayak in Washington state and would benefit from knowing in advance whether a river will be runnable. This could include recreational paddlers, professional paddlers, kayaking competition organizers, and kayaking companies. 
 
 For all of these users, the computer experience required to use the tool is general familiarity with operating simple web-based graphical user interfaces. The domain knowledge required is familiarity with the sport and the impact of river flow levels on paddling conditions. Users will need to understand what it means for a river to be within its stated runnable flow range, as well as how conditions could vary given a certain margin of error in the predicted flow rate. 
 
-## USE CASES
+## Use Cases
 
 Paddlers will use RiverRunner to help plan their kayaking trips by getting a prediction of a selected river's daily average flow rate up to two weeks in advance, which will provide an indication of whether the river will be runnable. The user will access the tool through a webpage, and select a river run by name from a drop-down filter. The system will respond with a plot of that run's historic flow rate for the past four weeks along with the flow rate predicted by the model, which will extend up to two weeks into the future. The plot will include a highlighted band between the maximum and minimum runnable flows for the selected run (where available) so the user can easily identify whether the predicted flow rate falls in the desired range. The tool will also include a map which will update based on the selected river run to show the put-in and take-out locations.
 
-## MOCKUP
+## Mockup
 
 The picture below shows a rough mockup of the planned RiverRunner user interface:
 
-![RiverRunner mockup](https://github.com/kentdanas/RiverRunner/blob/master/doc/mockup.png)
+![RiverRunner mockup](mockup.png)

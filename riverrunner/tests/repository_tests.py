@@ -126,7 +126,7 @@ class TestRepository(TestCase):
         self.repo.put_measurements_from_csv(self.context.measurements_file_name)
         measurements = self.session.query(context.Measurement).all()
         self.assertEqual(len(measurements), 1)
-        self.assertEqual(measurements[0].value, new_value)
+        self.assertAlmostEqual(measurements[0].value, new_value)
 
         # tear down
         self.context.remove_measurements_file_for_test()

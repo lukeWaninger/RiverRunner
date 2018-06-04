@@ -10,3 +10,5 @@ settings.py
 client_secrets.json
 
 *.cache/
+
+.DS_Store

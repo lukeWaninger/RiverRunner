@@ -1,9 +1,9 @@
-# River Runner - Whitewater Kayaking Predictions - Design Specification
+# Design Specification
 
 ## Overview
 The following diagram shows the high level design of River Runner:
 
-<img src="https://github.com/kentdanas/RiverRunner/blob/master/doc/design.PNG" width=400>
+![Design mockup](design.png)
 
 Detailed specifications for each component are described below.
 
@@ -93,7 +93,7 @@ Cnowpack is not currently being used as an exogenous predictor in our models, so
 ### RDBMS
 All data is gathered and processed according to this specification before being committed for persistence. Persistence is managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
 </br>
-<img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
+![RiverRunner schema](schema.png)
 <br/>
 Each table listed below indices on it's primary key unless otherwise noted.
 
@@ -186,7 +186,7 @@ The front end user interface is a simple web based UI implemented by the `ui.py`
 Basic interactivity is also implemented with Dash, including a popup with flow rate details upon hover for the plot, and selection of river run using the dropdown or the map.
 
 ## Interactions
-### Use case 1: The paddler
+### Use Case 1: The Paddler
 The paddler requests to view stream flow predictions for a specific kayaking run. The user has two options for finding a river's flow rate predictions:
 1. User searches for a river by typing the river name in the top search bar. The bar will autopopulate with a drop down to filter run names as the user types. Selecting a run will request a prediction.
 2. User views the runs populated on the map, clicking a point to retrieve predictions.
