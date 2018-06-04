@@ -1,12 +1,18 @@
 # River Runner - Whitewater Kayaking Predictions - Design Specification
 
+## Overview
+The following diagram shows the high level design of River Runner:
+<img src="https://github.com/kentdanas/RiverRunner/blob/master/doc/design.PNG" width=400 style='display:block; margin-left:auto; margin-right:auto'>
+
+Detailed specifications for each component are described below.
+
 ## Components
 
 ### Retrieve Historical Data
-Historical data will be retrieved via single use Python scripts that scrape, process, and commit historical data to the database described in this document. The main modules being used for this will be `json`, `re`, `requests`, and `pandas`.
+Historical data was retrieved via single use Python scripts that scrape, process, and commit historical data to the database described in this document. The main modules being used for this are `json`, `re`, `requests`, and `pandas`.
 
 #### River/Run Information
-The runs being processed by this application are static and gathered at the time of initial development. Each run is retrieved from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>. Initial river IDs are pulled from Professor Paddle's main page with Chrome dev tools and JQuery. URLs are then generated for each river and retrieved via `requests` and processed character-by-character into a Pandas data frame and saved to '/data/rivers.csv'. `def scrape_river_urls()`
+The runs being processed by this application are static and were gathered at the time of initial development. Each run was retrieved from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>. Initial river IDs are pulled from Professor Paddle's main page with Chrome dev tools and JQuery. URLs are then generated for each river and retrieved via `requests` and processed character-by-character into a Pandas data frame and saved to '/data/rivers.csv'. `def scrape_river_urls()`
 
 <b>relational mapping</b> - <i>river_run</i>  
 * <em>river_id</em>: <em>integer</em> PK as pulled  from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>
@@ -23,10 +29,10 @@ The runs being processed by this application are static and gathered at the time
 
 Associated address information is processed in `def parse_addresses_from_rivers()`.
 
-#### Temperature/Precipitation Data
+#### NOAA Temperature/Precipitation Data
 Temperature and precipitation data was gathered through individual requests for each station on the NOAA website. Each request returned a CSV file with all recording for the specific weather station. Addresses and stations were parsed from these files in `def parse_addresses_and_stations_from_precip()`.
 
-#### Snowpack Data
+#### NOAA Snowpack Data
 Initial snowpack data was retrieved from <a alt='NOAA snowpack' href='https://www.ncdc.noaa.gov/snow-and-ice/daily-snow/'>NOAA</a>.
 The function `def scrape_snowfall()` retrieves snowpack data for all reporting stations in Washington, one day at a 
 time. Results are saved to 'data/snowfall.csv' and manually uploaded to the database.
@@ -58,8 +64,8 @@ Address information is retrieved using `requests` through Google's <a alt='Googl
 * address: <em>varchar(255)</em> - closest street address to point
 * zip: <em>varchar(10)</em> - zip code
 
-#### River Metric Data
-For all river runs in Washington, we would like to have time series data for streamflow and other available metrics to use as  predictors for streamflow. We first retrieve a list of all <a href='https://waterdata.usgs.gov/wa/nwis/uv'>USGS stream sites</a> (stations) in the state of Washington and formulate a list of all metrics (that are <a href='https://help.waterdata.usgs.gov/parameter_cd?group_cd=%'>provided by USGS</a>) we would like to include in our model as predictors. Using these lists and python's `requests` module, the retrieval process is outlined below:
+#### USGS Streamflow Data
+To collect streamflow data for all river runs we retrieved a list of all <a href='https://waterdata.usgs.gov/wa/nwis/uv'>USGS stream sites</a> (stations) in the state of Washington. Using this list and python's `requests` module, the retrieval process is outlined below:
 
 * Call USGS's Instantaneous Values API for each combination of site and metric, returning data in a JSON format
 * Extract timestamp and measurement value from JSON format and write to CSV file
@@ -71,8 +77,20 @@ For all river runs in Washington, we would like to have time series data for str
 * date_time: <em>timestamp</em> - timestamp when measurement was recorded
 * value: <em>real</em> - recorded measurement
 
-#### Additional schema information
-All data will be gathered and processed according to this specification before being committed for persistence. Persistence will be managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
+### Continuous Data Retrieval
+Retrieving all static and historical data need only be done once, but to keep the data up to date we need to continuously retrieve and integrate all new time series data into the database. The following data is retrieved on a daily basis.
+
+#### DarkSky Temperature/Precipitation Data
+Since retrieving historical temperature and precipitation data from NOAA involves sending a request and receiving an email in response containing a link to download the requested data (a process that would be cumbersome to repeat on a daily basis), <a href='https://darksky.net/dev'>DarkSky</a> (DarkSky), which provided simpler automatability was used for ongoing temperature and precipitation data. Continuous API calls to DarkSky are made with the `continuous.py` module.
+
+#### USGS Streamflow Data
+<a href='https://waterservices.usgs.gov/rest/IV-Test-Tool.html'>USGS's Instantaneous Values API</a> makes it easy to automate the continuous retrieval of time series data. Repeated calls to the USGS Instantaneous Values REST web service are also made using the `continuous.py` module.
+
+#### Snowpack Data
+Cnowpack is not currently being used as an exogenous predictor in our models, so it is not being collected on an ongoing basis at this time. However, as part of the process of retrieving historical snowpack data, we retrieved time series data from this source one day at a time. So, the `scrape_snowfall()` function could seemlessly be reused to continuously retrieve new data in the future, with the only modification needed is to automate the uploading of snowpack data into the database.
+
+### RDBMS
+All data is gathered and processed according to this specification before being committed for persistence. Persistence is managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
 </br>
 <img src="https://raw.githubusercontent.com/kentdanas/RiverRunner/master/doc/schema.png" width=400 style='display:block; margin-left:auto; margin-right:auto'>
 <br/>
@@ -91,9 +109,8 @@ Each table listed below indices on it's primary key unless otherwise noted.
 
 <b>station_river_distance</b> - <i>stores geographical distances between each run and each weather station.</i> 
 * station_id <em>varchar(31)</em>: station for which distance is computed, PK, FK->[station].station_id
-* river_id <em>integer</em>: river for which distance is computed, PK, FK->[river_run].river_id  
-* put_in_distance <em>real</em>: distance measured in miles from run's starting point to weather station
-* take_out_distance <em>real</em>: distance measured in miles from run's ending point to weather station
+* run_id <em>integer</em>: river for which distance is computed, PK, FK->[river_run].river_id  
+* distance <em>real</em>: distance measured in miles from run's starting point to weather station
 
 <i>indices</i>
 + clustered index on (put_in_distance)
@@ -123,27 +140,32 @@ Distances are calculated via the following code snippet
 + clustered index on (date_time)
 + unclustered index on (station_id), (metric_id)
 
-### Continuous Data Retrieval
-Retrieving all static and historical data need only be done once, but to keep the data up to date we need to continuously retrieve and integrate all new time series data into the database. The plan is to retrieve new time series data from the following categories on a daily basis.
+<b>river_run</b> - <i>stores static river run information</i>     
+* run_id <em>integer</em> unique identifier for river run, PK
+* class_rating <em>varchar(31)</em> class rating (difficulty) for the river run
+* max_level <em>integer</em> maximum runnable flow rate
+* min_level <em>integer</em> minimum runnable flow rate
+* put_in_latitude <em>real</em> latitude of put in location
+* put_in_longitude <em>real</em> longitude of put in location
+* distance <em>real</em> distance between put in and take out locations
+* river_name <em>varchar(255)</em> name of the river that run is on
+* run_name <em>varchar(255)</em> run name
+* take_out_latitude <em>real</em> latitude of take out location
+* take_out_longitude <em>real</em> longitude of take out location
 
-#### Temperature/Precipitation Data
-Since retrieving historical temperature and precipitation data from NOAA involves sending a request and receiving an email in response containing a link to download the requested data (a process that would be cumbersome to repeat on a daily basis), it would be ideal to find a separate source for daily temperature and precipitation data. After a separate source is found with simpler automatability, we will begin the process of automatically retrieving and ingesting time series temperature and precipitation data into the database on a daily basis.
 
-#### Snowpack Data
-As part of the process of retrieving historical snowpack data, we retrieve time series data one day at a time. So, the `scrape_snowfall()` function can seemlessly be reused to continuously retrieve new data, with the only modification needed is to automate the uploading of snowpack data into the database.
+<b>prediction</b> - <i>stores predicted flow rates for each run as generated by ARIMA model</i>     
+* run_id <em>integer</em> run for which predictions were generated, PK, FK->[river_run].run_id
+* timestamp <em>timestamp</em> date for which prediction was generated, PK
+* fr_lb <em>double precision</em> lower error bound of flow rate prediction
+* fr <em>double precision</em> predicted flow rate
+* fr_ub <em>double precision</em> upper error bound of flow rate prediction
 
-#### River Metric Data
-<a href='https://waterservices.usgs.gov/rest/IV-Test-Tool.html'>USGS's Instantaneous Values API</a> makes it easy to automate the continuous retrieval of time series data. The only difference between retrieving historical data and continuously retrieving river metric data from USGS is eliminating the creation of an intermediate CSV file and, instead, inserting the JSON data returned from the API directly into the database.
+### Object Relational Mapping
 
-### Web server
-A simple web server will be required to process user requests. This will be implemented using nodejs running on Ubuntu Server 16.06 LTE.
 
-<b>Web requests</b> will be processed through a single nodejs HTTP endpoint.
-
-<b>Prediction data</b> will be provided on demand and cached by the browser once retrieved. These requests will go through the same HTTP endpoint and provide JSON data as a result.
-
-### Server side predictions
-Future river flow rates are predicted using an autoregressive integrated moving average (ARIMA) model generated from historic USGS river flow rate time series data. Temperature and precipitation are included in the models as exogenous predictor variables; snowpack will be included as an exogenous predictor at a later date if deemed useful, but will not be used for the first release. Models are generated using the past four years of historical data up to the current day, and predictions are made for the future seven days.
+### Server Side Predictions
+Future river flow rates are predicted using an autoregressive integrated moving average (ARIMA) model generated from historic USGS river flow rate time series data. Temperature and precipitation are included in the models as exogenous predictor variables; snowpack will be included as an exogenous predictor at a later date if deemed useful, but was not used for the first release. Models are generated using the past four years of historical data up to the current day, and predictions are made for the future seven days.
 
 Exploration of the data was completed using `arima_exploration.py`. The `test_stationarity()` function was used to determine that flow rate is non-stationary on a short timeframe due to annual seasonality but stationary over longer periods of time; since most variation is caused short-term spikes in flow rate, this is averaged out over longer periods. Due to the large difference between the seasonality timeframe (annual) and the prediction timeframe (daily), the best models with the highest probability of convergence resulted from using an ARMA model (no differencing) on several years worth of stationary data for the run. The optimal order of the ARMA model for each run (i.e. p and q parameters) was examined for a few test runs using `plot_autocorrs()` to generate autocorrelation and partial autocorrelation plots for lag order and moving average order respectively. Since this analysis must be done manually, the order of ongoing models is determined using built-in python functions.
 
@@ -151,8 +173,16 @@ The module `arima.py` is used to build and fit the flow rate models for a given 
 
 Immediately following daily data retrieval, the ARIMA models are recalculated for each run with the results stored in a dataframe for plotting.
 
-### Client side interface
-A single HTML page will be created matching the mockup described in the functional specifications of this application. The page will store all required javascript and CSS data as the entire application only consists of a single page.
+### Dash Client Side Interface
+The front end user interface is a simple web based UI implemented by the `ui.py` module. The UI is built using Dash, and consists of:
+ - A dropdown menu with searching capabilities for river run selection 
+ - A plot for the selected river run containing:
+    - 21 days of historic flow rate
+    - 7 days of future predicted flow rate
+    - A highlighted band showing the maximum and minimum runnable levels for the run
+ - A map of all put in locations, color coded by runnability status
+
+Basic interactivity is also implemented with Dash, including a popup with flow rate details upon hover for the plot, and selection of river run using the dropdown or the map.
 
 ## Interactions
 ### Use case 1: The paddler
