@@ -278,7 +278,9 @@ class RiverRun(Base):
 
         td = datetime.timedelta(days=1)
         t_prediction = [p for p in predictions if today - td < p.timestamp < today + td]
-        if len(t_prediction) == 0 or self.max_level is None or self.min_level is None:
+        if len(t_prediction) == 0:
+            return -2
+        elif self.max_level is None or self.min_level is None:
             return -1.
         else:
             p = t_prediction[0]

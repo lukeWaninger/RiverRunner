@@ -13,7 +13,7 @@ def log(message):
     print(message)
 
     now = datetime.datetime.today()
-    with open(f'riverrunner/data/logs/{now.year}{now.month}{now.day}_log.txt', 'a+') as f:
+    with open(f'data/logs/{now.year}{now.month}{now.day}_log.txt', 'a+') as f:
         f.write(f'{datetime.datetime.now().isoformat()}: {message}\n')
 
 
@@ -92,8 +92,8 @@ def daily_run():
     context = Context(settings.DATABASE)
     session = context.Session()
 
-    #get_weather_observations(session)
-    #get_usgs_observations()
+    get_weather_observations(session)
+    get_usgs_observations()
     compute_predictions(session)
 
     session.close()
