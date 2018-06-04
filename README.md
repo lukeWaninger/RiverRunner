@@ -12,38 +12,54 @@ Our project has the following structure:
 ```
 RiverRunner/
   |- doc/
+     |- continuous_retrieval/
+        |- index.rst
+     |- data_abstraction/
+        |- index.rst
+     |- design_specification/  
+        |- design.png
+        |- DesignSpecification.md
+        |- schema.png
+     |- functional_specification/  
+        |- FunctionalSpecification.md
+        |- mockup.png
+     |- prediction/
+        |- index.rst
+     |- repository/
+        |- index.rst
+     |- Makefile
+     |- conf.py
+     |- index.rst
+     |- logo.png
+     |- make.bat
+     |- RiverRunner_final_presentation.pdf
   |- examples/
-  |- paper/
-     |- DesignSpecification.md
-     |- FunctionalSpecification.md
-     |- RiverRunner_techonology_review.pdf
   |- riverrunner/
      |- tests/
         |- __init__.py
         |- arima_tests.py
         |- context_tests.py
-        |- continuous_noaa_tests.py
+        |- data_retrieval_tests.py
         |- repository_tests.py
         |- tcontext.py
      |- __init__.py
      |- arima.py
      |- arima_exploration.py
      |- context.py
-     |- continuous_noaa.py
+     |- continuous_retrieval.py
+     |- daily.py
      |- repository.py
-     |- scrape_usgs_data.py
      |- static_data_scraping_functions.py
+     |- ui.py
   |- .coverageerc
   |- .gitignore
-  |- .travis.yml
   |- LICENSE
   |- README.md
   |- requirements.txt
 ```
-## Installation
 
 ## Examples
-An example of using River Runner to access flow rate predictions for one run can be found on the [examples](https://github.com/kentdanas/RiverRunner/tree/master/examples) section of this GitHub page.
+A demo video of interacting with the River Runner UI to access predictions can be found on the [examples](https://github.com/kentdanas/RiverRunner/tree/master/examples) section of this GitHub page.
 
 ## Project History
 The idea for River Runner was developed in April 2018 for the University of Washington's DATA 515 Software Engineering for Data Scientists course by Kenten Danas, Luke Waninger, and Ryan Bald. Having whitewater kayaked in Washington for several years, Kenten recognized the potential of a tool that could predict the flow rate of a given river run up to a few weeks in advance to help with planning weekend kayaking trips. The first objective we set was to create a preliminary ARIMA model that could be used to predict river run flow rates. We then created a basic ui from which paddlers can select a river run either from a dropdown or a map to see the predictions.
@@ -56,8 +72,4 @@ The scope of River Runner is currently limited to whitewater kayaking runs in Wa
 ## Acknowledgements
 We extend thanks to our University of Washington DATA 515 professors, Joe Hellerstein and Dave Beck, for providing guidance throughout this project on software engineering best practices.
 
-Resources used to collect the data needed for this project include [Professor Paddle](http://www.professorpaddle.com/rivers/riverlist.asp), NOAA, USGS, and Dark Sky.
-
-## Contact
-
-
+Resources used to collect the data needed for this project include [Professor Paddle](http://www.professorpaddle.com/rivers/riverlist.asp), NOAA, USGS, and DarkSky.
