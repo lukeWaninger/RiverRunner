@@ -163,7 +163,8 @@ Distances are calculated via the following code snippet
 * fr_ub <em>double precision</em> upper error bound of flow rate prediction
 
 ### Object Relational Mapping
-
+ORM is being used to map our Python classes to the database backend. We elected to use `sqlalchemy` for this as it 
+gives us more flexibility with hybrid properties and other joining methods. All tables described in the RDMS section above have associated Python classes. This keeps our model fluid and allows easier DB installation through `sqlalchemy`'s `create_all()` method.
 
 ### Server Side Predictions
 Future river flow rates are predicted using an autoregressive integrated moving average (ARIMA) model generated from historic USGS river flow rate time series data. Temperature and precipitation are included in the models as exogenous predictor variables; snowpack will be included as an exogenous predictor at a later date if deemed useful, but was not used for the first release. Models are generated using the past four years of historical data up to the current day, and predictions are made for the future seven days.
