@@ -1,3 +1,10 @@
+"""
+module defining the class Repository
+
+The repository class represents an abstraction for the user to interface with the backend. It provides
+standard CRUD operations as defined below.
+"""
+
 import datetime
 import pandas as pd
 import psycopg2

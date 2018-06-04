@@ -1,3 +1,28 @@
+"""
+Module for mapping the ORM context to Python classes.
+
+Classes:
+    Context: generates a database engine and contains a mangaged database connection through the Session object.
+        A connection string must be provided and in the following format:
+
+        DATABASE = {
+           'drivername': 'postgres',
+           'host': <host name or ip>,
+           'port': '5432',
+           'username': <db username>',
+           'password': <db password>,
+           'database': <db name>
+        }
+
+        Any table not present or not matching the definitions below will be created or updated during
+        context initialization.
+
+    ORM Classes: map objects their respective type to their associated database tables. See the design
+    specification for more detailed information. Mapped objects defined below are: Address, Measurement,
+    Metric, Prediction, RiverRun, State, Station, StationRiverDistance, and TmpMeasurement.
+"""
+
+
 import datetime
 from sqlalchemy import create_engine, select
 from sqlalchemy.engine.url import URL
@@ -27,7 +52,7 @@ class Context(object):
 
         self.__engine = create_engine(URL(**connection_string))
 
-        self.Session  = sessionmaker()
+        self.Session = sessionmaker()
         self.Session.configure(bind=self.__engine)
 
         try:
