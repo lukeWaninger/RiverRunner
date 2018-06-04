@@ -2,7 +2,8 @@
 
 ## Overview
 The following diagram shows the high level design of River Runner:
-<img src="https://github.com/kentdanas/RiverRunner/blob/master/doc/design.PNG" width=400 style='display:block; margin-left:auto; margin-right:auto'>
+
+<img src="https://github.com/kentdanas/RiverRunner/blob/master/doc/design.PNG" width=400>
 
 Detailed specifications for each component are described below.
 
