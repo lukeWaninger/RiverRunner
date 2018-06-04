@@ -1,6 +1,6 @@
 from .context import *
 from .repository import *
-from .scrape_usgs_data import *
-from .continuous_noaa import *
+from .daily import *
+from .continuous_retrieval import *
 
 

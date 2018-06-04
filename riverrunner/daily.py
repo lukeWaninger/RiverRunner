@@ -7,12 +7,10 @@ fill_gaps: the variables day and end can be modified as necessary to retrieve we
 specified date range
 """
 
-import datetime as dt
-import pandas as pd
 from riverrunner.arima import Arima
-from riverrunner.context import Context, Prediction
-from riverrunner import continuous_noaa, settings
-from riverrunner.scrape_usgs_data import *
+from riverrunner.context import Prediction
+from riverrunner import continuous_retrieval
+from riverrunner.continuous_retrieval import *
 from riverrunner.repository import Repository
 from sqlalchemy.exc import SQLAlchemyError
 import time
@@ -34,9 +32,9 @@ def log(message):
     """
     print(message)
 
-    now = datetime.datetime.today()
+    now = dt.datetime.today()
     with open(f'data/logs/{now.year}{now.month}{now.day}_log.txt', 'a+') as f:
-        f.write(f'{datetime.datetime.now().isoformat()}: {message}\n')
+        f.write(f'{dt.datetime.now().isoformat()}: {message}\n')
 
 
 def get_weather_observations(session, attempt=0):
@@ -53,7 +51,7 @@ def get_weather_observations(session, attempt=0):
     try:
         if attempt >= DARK_SKY_RETRIES:
             return 1
-        added = continuous_noaa.put_24hr_observations(session)
+        added = continuous_retrieval.put_24hr_observations(session)
 
         log(f'added {added} observations to db')
         return True
@@ -73,7 +71,7 @@ def get_weather_observations(session, attempt=0):
 
 def get_usgs_observations():
     """retrieves yesterday's USGS river metrics"""
-    yesterday = datetime.date.today() - datetime.timedelta(days=1)
+    yesterday = dt.date.today() - dt.timedelta(days=1)
     end_date = yesterday.isoformat()
 
     csv_files = scrape_usgs_data(start_date=end_date, end_date=end_date)
@@ -139,42 +137,6 @@ def daily_run():
     compute_predictions(session)
 
     session.close()
-
-
-def fill_gaps():
-    """use as needed to fill gaps in weather measurements
-
-    Notes:
-        * day: the start day, included in API calls
-        * end: th end day, non-inclusive
-    """
-    day = dt.datetime(year=2018, month=5, day=18)
-    end = dt.datetime(year=2018, month=5, day=19)
-
-    context = Context(settings.DATABASE)
-    session = context.Session()
-
-    repo = Repository(session)
-    stations = repo.get_all_stations(source='NOAA')
-
-    while day != end:
-        content = stations.apply(
-            lambda station: continuous_noaa.make_station_observation_request(station, day.isoformat()),
-            axis=1
-        ).values
-
-        # put them all in the db
-        added = 0
-        for station_measurements in content:
-            try:
-                repo.put_measurements_from_list(station_measurements)
-            except:
-                session.rollback()
-                continue
-            added += len(station_measurements)
-
-        print(f'added {added} - {day.isoformat()}')
-        day += datetime.timedelta(days=1)
 
 
 if __name__ == '__main__':

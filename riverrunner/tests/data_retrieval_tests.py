@@ -1,5 +1,6 @@
+import datetime as dt
 from riverrunner.context import Address, Metric, RiverRun, Station
-from riverrunner.continuous_noaa import *
+from riverrunner.continuous_retrieval import *
 from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
 
@@ -80,7 +81,7 @@ class TestRepository(TestCase):
     def test_make_station_observation_request(self):
         """test a request to NOAA for observations"""
         a = self.session.query(Measurement).filter(
-            Measurement.date_time >= datetime.datetime.now() - datetime.timedelta(days=24)
+            Measurement.date_time >= dt.datetime.now() - dt.timedelta(days=24)
         ).all()
 
         address1 = Address(
@@ -118,6 +119,6 @@ class TestRepository(TestCase):
 
         # assert
         b = self.session.query(Measurement).filter(
-            Measurement.date_time >= datetime.datetime.now() - datetime.timedelta(days=24)
+            Measurement.date_time >= dt.datetime.now() - dt.timedelta(days=24)
         ).all()
         self.assertTrue(len(b) > len(a))
