@@ -37,7 +37,12 @@ RiverRunner/
      |- make.bat
      |- RiverRunner_final_presentation.pdf
   |- examples/
+     |- the_kayaker_use_case.md
   |- riverrunner/
+     |- static/
+        |- __init__.py
+        |- arima_exploration.py
+        |- scraping.py
      |- tests/
         |- __init__.py
         |- arima_tests.py
@@ -47,14 +52,11 @@ RiverRunner/
         |- tcontext.py
      |- __init__.py
      |- arima.py
-     |- arima_exploration.py
      |- context.py
      |- continuous_retrieval.py
      |- daily.py
      |- repository.py
-     |- static_data_scraping_functions.py
      |- ui.py
-  |- .coverageerc
   |- .gitignore
   |- LICENSE
   |- README.md
