@@ -1,9 +1,9 @@
 """
 Unit tests for arima module
 """
+import unittest
 import numpy as np
 from riverrunner.arima import Arima
-import unittest
 
 
 class TestArima(unittest.TestCase):
@@ -16,9 +16,9 @@ class TestArima(unittest.TestCase):
 
     def test_daily_avg_returns_correct_columns(self):
         """
-        Tests that only flow, temp, and precip columns are present in dataframe
-        and are spelled correctly. Important since arima_model function references
-        these column names.
+        Tests that only flow, temp, and precip columns are present in
+        dataframe and are spelled correctly. Important since arima_model
+        function references these column names.
         Returns: result of test
         """
         # setup
@@ -41,9 +41,10 @@ class TestArima(unittest.TestCase):
         # assert
         self.assertFalse(averages.isnull().any().any())
 
-    def test_arima_model_returns_27_days_flow_rate(self):
+    def test_arima_model_returns_correct_days(self):
         """
-        Test that arima_model function returns 7 predictions + 21 past flow rates
+        Test that arima_model function returns 7 predictions + 20
+        past flow rates
         Returns: results of test
         """
         # setup
@@ -52,9 +53,10 @@ class TestArima(unittest.TestCase):
         # assert
         self.assertTrue(len(predictions) == 27)
 
-    def test_arima_model_still_returns_prediction_if_order_select_fails(self):
+    def test_arima_model_runs_if_order_select_fails(self):
         """
-        Complete test for river run for which we know model order selection does not converge
+        Complete test for river run for which we know model order
+        selection does not converge
 
         Returns: Result of test
         """
@@ -63,9 +65,10 @@ class TestArima(unittest.TestCase):
         except Exception:
             self.fail("arima_model() raised Exception unexpectedly")
 
-    def test_arima_model_still_returns_prediction_if_ARIMA_fails(self):
+    def test_arima_model_runs_if_arima_fails(self):
         """
-        Complete test for river run for which we know ARIMA model does not converge
+        Complete test for river run for which we know ARIMA model
+        does not converge
 
         Returns: Result of test
         """
