@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 export SPHINXBUILD   = sphinx-build -M
-export SPHINXPROJ    = RiverRunners
+export SPHINXPROJ    = RiverRunner
 export SOURCEDIR     = .
 export BUILDDIR      = _build
 
