@@ -1,18 +1,18 @@
 """ script that scrapes and uploads DarkSky and USGS data
 
 Examples:
-    python scrape_usgs_data.py [--csv] --manual start-date end-date
+    python continuous_retrieval.py [--csv] --manual start-date end-date
 
     * scrapes and uploads data over the specified date range (inclusive)
-    * start-date and end-date must be in the format 'YYYY-MM-DD'
-    * optional argument to insert records into database from CSV file
+    * start-date and end-date must be in ISO format, 'YYYY-MM-DD'
+    * optional argument to insert records into database from CSV file (for USGS data only)
 
-    python scrape_usgs_data.py [--csv] --daily [days-back]
+    python continuous_retrieval.py [--csv] --daily [days-back]
 
     * scrapes and uploads data over date range
     * date range is from days-back before yesterday to yesterday (inclusive)
     * optional days-back parameter must be an integer (defaults to 0)
-    * optional argument to insert records into database from CSV file
+    * optional argument to insert records into database from CSV file (for USGS data only)
 """
 
 import datetime as dt
@@ -27,24 +27,20 @@ from sqlalchemy.exc import SQLAlchemyError
 import sys
 
 
-"""data directory"""
+# data directory
 DATA_DIR = "data/"
 
-"""base API urls"""
+# base API URLs
 DARK_SKY_URL = 'https://api.darksky.net/forecast'
 USGS_BASE_URL = "https://waterservices.usgs.gov/nwis/iv/"
 
-"""USGS constants"""
+# USGS query constants
 USGS_FORMAT = "json"
 USGS_SITE_STATUS = "all"
 
-"""USGS parameter codes to retrieve"""
+# USGS parameter codes
 PARAM_CODES = [
-    # "00021",
-    # "00045",
     "00060",
-    # "72147",
-    # "72254"
 ]
 
 
@@ -53,7 +49,7 @@ def fill_noaa_gaps(start_date, end_date):
 
     Args:
         start_date: the start day, included in API calls
-        end_date: th end day, non-inclusive
+        end_date: the end day, inclusive
     """
     context = Context(settings.DATABASE)
     session = context.Session()
@@ -62,7 +58,7 @@ def fill_noaa_gaps(start_date, end_date):
     stations = repo.get_all_stations(source='NOAA')
 
     # loop through each day retrieving observations
-    while start_date != end_date:
+    while start_date <= end_date:
         content = stations.apply(
             lambda station: make_station_observation_request(station, start_date.isoformat()),
             axis=1
@@ -83,7 +79,7 @@ def fill_noaa_gaps(start_date, end_date):
 
 
 def get_noaa_predictions(run_id, session):
-    """retrieve noaa predictions for run
+    """retrieve NOAA predictions for run
 
     Args
         run_id (int): run
@@ -107,10 +103,10 @@ def get_noaa_predictions(run_id, session):
 
 
 def get_usgs_site_ids():
-    """ retrieve site ids from database
+    """ retrieve USGS site ids from database
 
     Returns:
-        [string]: list of site ids
+        [str]: list of site ids
     """
     r = Repository()
     sites = r.get_all_stations(source="USGS")
@@ -119,16 +115,16 @@ def get_usgs_site_ids():
 
 
 def get_usgs_json_data(site_id, start_date, end_date, param_code):
-    """ retrieve JSON data for a specific site, parameter, and date range
+    """ retrieve JSON data for a specific USGS site, parameter, and date range
 
     Args:
-        site_id (string): string representation of site id
-        start_date (string): start date in the format 'YYYY-MM-DD'
-        end_date (string): end date in the format 'YYYY-MM-DD'
-        param_code (string): string representation of parameter code
+        site_id (str): string representation of site id
+        start_date (str): start date in ISO format, 'YYYY-MM-DD'
+        end_date (str): end date in ISO format, 'YYYY-MM-DD'
+        param_code (str): string representation of parameter code
 
     Returns:
-        dict[string, string]: map relating timestamps to values
+        dict[str, str]: map relating timestamps to values
     """
     params = {
         "format": USGS_FORMAT,
@@ -144,7 +140,7 @@ def get_usgs_json_data(site_id, start_date, end_date, param_code):
     except json.decoder.JSONDecodeError:
         print(response.content)
         raise
-    #response_json = requests.get(USGS_BASE_URL, params=params).json()
+    # response_json = requests.get(USGS_BASE_URL, params=params).json()
     time_series_list = response_json["value"]["timeSeries"]
     values_list = []
     if len(time_series_list) > 0:
@@ -238,19 +234,19 @@ def put_24hr_observations(session):
     for station_measurements in content:
         repo.put_measurements_from_list(station_measurements)
         added += len(station_measurements)
-    
+
     return added
 
 
 def scrape_usgs_data(start_date, end_date):
-    """ scrape data for all sites and parameters, over the specified date range
+    """ scrape data for all USGS sites and parameters, over the specified date range
 
     Args:
-        start_date (string): start date in the format 'YYYY-MM-DD'
-        end_date (string): end date in the format 'YYYY-MM-DD'
+        start_date (str): start date in ISO format, 'YYYY-MM-DD'
+        end_date (str): end date in ISO format, 'YYYY-MM-DD'
 
     Returns:
-        [string]: list of full paths of CSV files that were written to
+        [str]: list of full paths of CSV files that were written to
     """
     start_date_file_ext = start_date.replace("-", "")
     end_date_file_ext = end_date.replace("-", "")
@@ -289,8 +285,8 @@ def upload_data_from_file(csv_file, from_csv=False):
     """ insert all records contained in file to database
 
     Args:
-        csv_file (string): full path of CSV file containing records
-        from_csv (bool): whether to insert into database using CSV or ORM
+        csv_file (str): full path of CSV file containing records
+        from_csv (bool): whether to insert into database using CSV or ORM (CSV scales better)
 
     Returns:
         bool: success/exception

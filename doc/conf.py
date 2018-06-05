@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# River Runners documentation build configuration file, created by
+# River Runner documentation build configuration file, created by
 # sphinx-quickstart on Mon May 14 18:15:12 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -60,7 +60,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = 'River Runners'
+project = 'River Runner'
 copyright = '2018, Ryan Bald, Kenten Danas, Luke Waninger'
 author = 'Ryan Bald, Kenten Danas, Luke Waninger'
 
@@ -127,7 +127,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'RiverRunnersdoc'
+htmlhelp_basename = 'RiverRunnerdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -154,7 +154,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'RiverRunners.tex', 'River Runners Documentation',
+    (master_doc, 'RiverRunner.tex', 'River Runner Documentation',
      'Ryan Bald, Kenten Danas, Luke Waninger', 'manual'),
 ]
 
@@ -164,7 +164,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'riverrunners', 'River Runners Documentation',
+    (master_doc, 'riverrunners', 'River Runner Documentation',
      [author], 1)
 ]
 
@@ -175,8 +175,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'RiverRunners', 'River Runners Documentation',
-     author, 'RiverRunners', 'One line description of project.',
+    (master_doc, 'RiverRunner', 'River Runner Documentation',
+     author, 'RiverRunner', 'One line description of project.',
      'Miscellaneous'),
 ]
 
