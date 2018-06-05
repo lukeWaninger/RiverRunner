@@ -88,7 +88,7 @@ Since retrieving historical temperature and precipitation data from NOAA involve
 <a href='https://waterservices.usgs.gov/rest/IV-Test-Tool.html'>USGS's Instantaneous Values API</a> makes it easy to automate the continuous retrieval of time series data. Repeated calls to the USGS Instantaneous Values REST web service are also made using the `continuous.py` module.
 
 #### Snowpack Data
-Cnowpack is not currently being used as an exogenous predictor in our models, so it is not being collected on an ongoing basis at this time. However, as part of the process of retrieving historical snowpack data, we retrieved time series data from this source one day at a time. So, the `scrape_snowfall()` function could seemlessly be reused to continuously retrieve new data in the future, with the only modification needed is to automate the uploading of snowpack data into the database.
+Snowpack is not currently being used as an exogenous predictor in our models, so it is not being collected on an ongoing basis at this time. However, as part of the process of retrieving historical snowpack data, we retrieved time series data from this source one day at a time. So, the `scrape_snowfall()` function could seemlessly be reused to continuously retrieve new data in the future, with the only modification needed is to automate the uploading of snowpack data into the database.
 
 ### RDBMS
 All data is gathered and processed according to this specification before being committed for persistence. Persistence is managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
