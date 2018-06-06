@@ -8,7 +8,7 @@
 <img src=https://github.com/kentdanas/RiverRunner/raw/master/doc/logo.png  width="200" height="200" />
 
 # River Runner
-River Runner is a simple web-based tool that allows whitewater kayakers to see flow rate predictions for river runs in Washington state in order to help plan future kayaking trips. By using autoregressive integrated moving average (ARIMA) models on public USGS historical river flow rate data, along with exogenous regressors such as precipitation, snow pack, and temperature, River Runner provides predictions of daily average river flow rates seven days in advance. Results are shown on a plot along with the maximum and minimum runnable flow rates so paddlers can easily see whether the river is predicted to be runnable.
+River Runner is a simple web-based tool that allows whitewater kayakers to see flow rate predictions for river runs in Washington state in order to help plan future kayaking trips. By using autoregressive integrated moving average (ARIMA) models on public USGS historical river flow rate data, along with exogenous regressors such as precipitation, snow pack, and temperature, River Runner provides predictions of daily average river flow rates seven days in advance. Results are shown on a plot along with the maximum and minimum runnable flow rates so paddlers can easily see whether the river is predicted to be runnable. The application can be accessed at this <a href="http://lkwaninger.ddns.net/">link</a>.
 
 ## Project Organization
 Our project has the following structure:
