@@ -122,3 +122,20 @@ class TestRepository(TestCase):
             Measurement.date_time >= dt.datetime.now() - dt.timedelta(days=24)
         ).all()
         self.assertTrue(len(b) > len(a))
+
+    def test_get_usgs_site_ids(self):
+        """test that USGS station ids get retrieved"""
+        # assert
+        site_ids = get_usgs_site_ids()
+        self.assertTrue(len(site_ids) != 0)
+
+    def test_get_usgs_json_data(self):
+        """test a successful request is made to USGS API"""
+        site_id = "12010000"
+        start_date = "2018-01-01"
+        end_date = start_date
+        param_code = PARAM_CODES[0]
+
+        # assert
+        date_value_map = get_usgs_json_data(site_id, start_date, end_date, param_code)
+        self.assertTrue(len(date_value_map) != 0)
