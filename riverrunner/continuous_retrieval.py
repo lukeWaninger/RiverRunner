@@ -44,18 +44,19 @@ PARAM_CODES = [
 ]
 
 
-def fill_noaa_gaps(start_date, end_date):
+def fill_noaa_gaps(start_date, end_date, db=settings.DATABASE):
     """use as needed to fill gaps in weather measurements
 
     Args:
         start_date: the start day, included in API calls
         end_date: the end day, inclusive
     """
-    context = Context(settings.DATABASE)
+    context = Context(db)
     session = context.Session()
 
     repo = Repository(session)
     stations = repo.get_all_stations(source='NOAA')
+    total = 0
 
     # loop through each day retrieving observations
     while start_date <= end_date:
@@ -76,6 +77,9 @@ def fill_noaa_gaps(start_date, end_date):
 
         print(f'added {added} - {start_date.isoformat()}')
         start_date += dt.timedelta(days=1)
+        total += added
+
+    return total
 
 
 def get_noaa_predictions(run_id, session):

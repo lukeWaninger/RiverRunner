@@ -139,3 +139,17 @@ class TestRepository(TestCase):
         # assert
         date_value_map = get_usgs_json_data(site_id, start_date, end_date, param_code)
         self.assertTrue(len(date_value_map) != 0)
+
+    def test_fill_noaa_gaps(self):
+        station = self.context.get_stations_for_test(1, self.session)[0]
+        station.source = 'NOAA'
+        station.latitude = 47,
+        station.longitude = 122
+        self.session.add(station)
+
+        start = dt.datetime.now()
+        start = dt.datetime(year=start.year, month=start.month, day=start.day) - dt.timedelta(days=1)
+        end_date = dt.datetime.now()
+
+        t = fill_noaa_gaps(start, end_date, settings.DATABASE_TEST)
+        self.assertEqual(t, 0)
