@@ -11,13 +11,13 @@ import plotly.graph_objs as go
 from riverrunner.repository import Repository
 from riverrunner import settings
 
-"""IP address for running application"""
+# IP address for running application
 HOST_IP = '192.168.80.13'
 
-"""enable for application debugging features"""
+# enable for application debugging features
 DEBUG = False
 
-"""mapping from river's predicted status to a color codes"""
+# mapping from river's predicted status to a color code
 COLOR_MAP = dict(
     unknown='#41434C',
     optimal='#4254CC',
@@ -25,12 +25,13 @@ COLOR_MAP = dict(
     not_recommended='#A63617'
 )
 
-# create a new repository instance and retrieve all river runs
 repo = Repository()
 runs = repo.get_all_runs_as_list()
+runs = [run for run in runs if run.todays_runability != -2]
 options = [r.select_option for r in runs]
+options.sort(key=lambda r: r['label'])
 
-# create a new Dash app adding custom fonts and css
+# create a new Dash app adding custom fonts and CSS
 app = dash.Dash()
 font_url = 'https://fonts.googleapis.com/css?family=Montserrat|Permanent+Marker'
 app.css.append_css({
@@ -52,55 +53,73 @@ def color_scale(x):
     if x == -1.:
         return 'unknown'
 
-    elif 0 <= x < .33:
+    elif 0 <= x < .66:
         return 'optimal'
 
-    elif .33 <= x < .66:
+    elif .66 <= x < .99:
         return 'fair'
 
-    elif .66 <= x < .99:
+    else:
         return 'not_recommended'
 
 
 def build_set(rating, ms):
-    """build a set of markers
+    if rating == 'selected':
+        run, col = ms[0]
 
-    Args:
-        rating: (str) rating
-        ms: [RiverRun] list of runs in bin
+        return go.Scattermapbox(
+            name='selected',
+            lat=[run.put_in_latitude],
+            lon=[run.put_in_longitude],
+            text=[f'{run.run_name}</br></br>rating: {run.class_rating}</br>distance: {run.distance} mile(s)'],
+            ids=[run.run_id],
+            mode='markers',
+            marker=dict(
+                size=24,
+                color='#AEFF0D',
+                opacity=0.8,
+                symbol='circle'
+            ),
+            showlegend=False,
+            hoverinfo='text'
+        )
+    else:
+        return go.Scattermapbox(
+            name=rating,
+            lat=[run.put_in_latitude for run in ms],
+            lon=[run.put_in_longitude for run in ms],
+            text=[f'{run.run_name}</br></br>rating: {run.class_rating}</br>distance: {run.distance} mile(s)' for run in
+                  ms],
+            ids=[run.run_id for run in ms],
+            mode='markers',
+            marker=dict(
+                size=12,
+                color=COLOR_MAP[rating],
+                opacity=0.8,
+            ),
+            hoverinfo='text'
+        )
 
-    Returns:
-        plotly.graph_objs.Scattermapbox
-    """
-    return go.Scattermapbox(
-        name=rating,
-        lat=[run.put_in_latitude for run in ms],
-        lon=[run.put_in_longitude for run in ms],
-        text=[f'{run.run_name}</br></br>rating: {run.class_rating}</br>distance: {run.distance} mile(s)' for run in
-              ms],
-        ids=[run.run_id for run in ms],
-        mode='markers',
-        marker=dict(
-            size=12,
-            color=COLOR_MAP[rating],
-            opacity=0.8
-        ),
-        hoverinfo='text'
-    )
 
-
-def build_map():
+def build_map(value, lat, lon, zoom):
     """build the map figure
 
     map is built by referencing the runs retrieved at the current module level
 
     Returns:
-        dict: {data=[graph_objs.Scattermapbox], layout=graph_ojbs.Layout}
+        dict: {data=[graph_objs.Scattermapbox], layout=graph_objs.Layout}
     """
     # bin the map's markers by predicted flow rating
     marker_sets = {'unknown': []}
     for run in runs:
+        if run.todays_runability == -2:
+            continue
+
         rating = color_scale(run.todays_runability)
+
+        if run.run_id == value:
+            marker_sets['selected'] = [(run, rating)]
+            continue
 
         if rating not in marker_sets:
             marker_sets[rating] = []
@@ -113,6 +132,27 @@ def build_map():
     # build marker sets for each bin
     data = [build_set(key, value) for key, value in marker_sets.items() if key is not None]
 
+    # add center dot to selected
+    selected = marker_sets['selected']
+    run, rating = selected[0]
+    center_dot = go.Scattermapbox(
+        name='selected',
+        lat=[run.put_in_latitude],
+        lon=[run.put_in_longitude],
+        text=[f'{run.run_name}</br></br>rating: {run.class_rating}</br>distance: {run.distance} mile(s)'],
+        ids=[run.run_id],
+        mode='markers',
+        marker=dict(
+            size=20,
+            color=COLOR_MAP[rating],
+            opacity=1,
+            symbol='circle'
+        ),
+        showlegend=False,
+        hoverinfo='text'
+    )
+    data.append(center_dot)
+
     # create the map layout
     layout = go.Layout(
         autosize=True,
@@ -122,11 +162,11 @@ def build_map():
             accesstoken=settings.MAPBOX,
             bearing=0,
             center=dict(
-                lat=47,
-                lon=-122
+                lat=lat,
+                lon=lon
             ),
             pitch=0,
-            zoom=7
+            zoom=zoom
         ),
         margin=dict(l=10, r=10, b=0, t=0),
         legend=dict(
@@ -145,7 +185,8 @@ def build_map():
         )
     )
 
-    return dict(data=data, layout=layout)
+    fig = dict(data=data, layout=layout)
+    return fig
 
 
 def build_timeseries(value):
@@ -161,27 +202,38 @@ def build_timeseries(value):
     if run.predictions is None:
         return None
 
-    # separate observed dates and values into lists
-    o_dates  = [p.timestamp for p in run.observed_measurements]
-    o_values = [p.fr for p in run.observed_measurements]
+    observe = dict(
+        dates=[p.timestamp for p in run.observed_measurements],
+        values=[p.fr for p in run.observed_measurements]
+    )
 
-    # separate predicted dates and values into lists
-    p_dates  = [p.timestamp for p in run.predicted_measurements]
-    p_values = [p.fr for p in run.predicted_measurements]
+    overlap = dict(
+        dates=observe['dates'][-1:],
+        values=observe['values'][-1:],
+        hoverinfo=['x'],
+        opacity=[0]
+    )
+
+    predict = dict(
+        dates=[p.timestamp for p in run.predicted_measurements],
+        values=[p.fr for p in run.predicted_measurements],
+        hoverinfo=['all' for p in run.predicted_measurements],
+        opacity=[1 for p in run.predicted_measurements]
+    )
 
     # if no predictions are found, return a Figure displaying an error message
-    if len(p_dates) == 0:
+    if len(predict['dates']) == 0:
         return go.Figure(data=[go.Scatter()], layout={'title': 'an error has occurred'})
 
     # get the min and max dates for x-axis
-    min_date = np.min(o_dates)
-    max_date = np.max(p_dates)
+    min_date = np.min(observe['dates'])
+    max_date = np.max(predict['dates'])
 
     # generate trace for observed measurements
     observed = go.Scatter(
         name='observed',
-        x=o_dates,
-        y=o_values,
+        x=observe['dates'],
+        y=observe['values'],
         line=dict(
             color='#252E75',
             width=3
@@ -191,16 +243,22 @@ def build_timeseries(value):
     # generate trace for predicted measurements
     predicted = go.Scatter(
         name='predicted',
-        x=p_dates,
-        y=p_values,
+        x=overlap['dates'] + predict['dates'],
+        y=overlap['values'] + predict['values'],
+        hoverinfo=overlap['hoverinfo'] + predict['hoverinfo'],
         line=dict(
             color='#C44200',
-            width=3
+            width=3,
+            dash='dash'
+        ),
+        marker=dict(
+            opacity=overlap['opacity'] + predict['opacity']
         )
     )
 
     # generate line for maximum recommended flow rate
     max_line = go.Scatter(
+        name='max',
         x=[min_date, max_date],
         y=[run.max_level, run.max_level],
         showlegend=False,
@@ -212,6 +270,7 @@ def build_timeseries(value):
 
     # generate line for minimum recommended flow rate
     min_line = go.Scatter(
+        name='min',
         x=[min_date, max_date],
         y=[run.min_level, run.min_level],
         showlegend=False,
@@ -221,24 +280,45 @@ def build_timeseries(value):
             dash='dot')
     )
 
+    mid = (run.max_level + run.min_level) / 2.
+    dif = run.max_level - mid
+    opt_low  = -.66*dif+mid if mid != 0 else 0
+    opt_high =  .66*dif+mid if mid != 0 else 0
+
     # create the layout building rectangle shapes for binned flow rate ratings
     layout = go.Layout(
         title="Flow Rate",
-        yaxis={'title': 'Flow Rate'},
-        shapes=[{
-            'type': 'rect',
-            'xref': 'x',
-            'yref': 'y',
-            'x0': min_date,
-            'y0': run.min_level,
-            'x1': max_date,
-            'y1': run.max_level,
-            'fillcolor': '#d3d3d3',
-            'opacity': 0.2,
-            'line': {
-               'width': 0,
+        yaxis={'title': 'Flow Rate (cfs)'},
+        shapes=[
+            {
+                'type': 'rect',
+                'xref': 'x',
+                'yref': 'y',
+                'x0': min_date,
+                'y0': run.min_level,
+                'x1': max_date,
+                'y1': run.max_level,
+                'fillcolor': '#d3d3d3',
+                'opacity': 0.2,
+                'line': {
+                   'width': 0,
+                }
+            },
+            {
+                'type': 'rect',
+                'xref': 'x',
+                'yref': 'y',
+                'x0': min_date,
+                'y0': opt_low,
+                'x1': max_date,
+                'y1': opt_high,
+                'fillcolor': COLOR_MAP['optimal'],
+                'opacity': 0.08,
+                'line': {
+                    'width': 0,
+                }
             }
-        }],
+        ],
         legend=dict(
             traceorder='normal',
             orientation='h',
@@ -255,7 +335,8 @@ def build_timeseries(value):
         )
     )
 
-    return go.Figure(data=[observed, predicted, max_line, min_line], layout=layout)
+    fig = go.Figure(data=[observed, predicted, max_line, min_line], layout=layout)
+    return fig
 
 
 # setup the main application layout
@@ -302,7 +383,7 @@ app.layout = html.Div([
     html.Div(id='map_container',
              children=dcc.Graph(
                  id='river_map',
-                 figure=build_map(),
+                 figure=build_map(599, 47, -122, 7),
                  style={
                      'padding': '5px 20px 5px 20px',
                      'minHeight': '650px',
@@ -321,13 +402,13 @@ app.layout = html.Div([
                   Input('river_map', 'clickData')
                 ])
 def update_timeseries(value=599, marker=None):
-    """update the times series
+    """update the time series
 
     callback is triggered when either the drop-down changes values or a marker
     on the map is selected
 
     Args:
-        value: (int) selected RiverRun run_id
+        value: (int) selected RiverRun.run_id
         marker: (dict) graph_objs.Scattermapbox state
     """
     # make sure the request is valid
@@ -335,7 +416,27 @@ def update_timeseries(value=599, marker=None):
         return None
 
     # return the plot
-    return build_timeseries(value)
+    fig = build_timeseries(value)
+    return fig
+
+
+@app.callback(Output('river_map', 'figure'), [
+                  Input('river_dropdown', 'value'),
+                  Input('river_map', 'relayoutData'),
+                ])
+def update_map(value=599, marker=None, relayoutData=None):
+    if not isinstance(value, int):
+        return None
+
+    lat, lon, zoom = 47, -122, 7
+    if 'mapbox' in marker.keys():
+        center = marker['mapbox']['center']
+        lat = center['lat']
+        lon = center['lon']
+        zoom = marker['mapbox']['zoom']
+
+    fig = build_map(value, lat, lon, zoom)
+    return fig
 
 
 @app.callback(Output('river_selection_container', 'children'), [
@@ -344,7 +445,7 @@ def update_timeseries(value=599, marker=None):
 def update_dropdown(marker=None):
     """update the drop-down selected value
 
-    callback is triggered when a run is selected from the map. The drop-down is
+    callback is triggered when a run is selected from the map, the drop-down is
     updated to match the selected run
 
     Args:
@@ -360,7 +461,6 @@ def update_dropdown(marker=None):
                 value=value,
                 multi=False
             )
-
     # else return the drop-down's default value
     else:
         return dcc.Dropdown(
