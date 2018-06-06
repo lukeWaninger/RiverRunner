@@ -1,0 +1,481 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Design Specification &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Data Abstraction" href="../data_abstraction/index.html" />
+    <link rel="prev" title="Functional Specification" href="../functional_specification/functional_specification.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Design Specification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#components">Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#retrieve-historical-data">Retrieve Historical Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#river-run-information">River/Run Information</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#noaa-temperature-precipitation-data">NOAA Temperature/Precipitation Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#noaa-snowpack-data">NOAA Snowpack Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#location-data">Location Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#usgs-streamflow-data">USGS Streamflow Data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#continuous-data-retrieval">Continuous Data Retrieval</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#darksky-temperature-precipitation-data">DarkSky Temperature/Precipitation Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#usgs-streamflow-data">USGS Streamflow Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#snowpack-data">Snowpack Data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#rdbms">RDBMS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#object-relational-mapping">Object Relational Mapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#server-side-predictions">Server Side Predictions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dash-client-side-interface">Dash Client Side Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#interactions">Interactions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#use-case-1-the-paddler">Use Case 1: The Paddler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Design Specification</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/design_specification/design_specification.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="design-specification">
+<span id="design-specification"></span><h1>Design Specification<a class="headerlink" href="#design-specification" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<span id="overview"></span><h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The following diagram shows the high level design of River Runner:</p>
+<p><img alt="Design mockup" src="../_images/design.png" /></p>
+<p>Detailed specifications for each component are described below.</p>
+</div>
+<div class="section" id="components">
+<span id="components"></span><h2>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="retrieve-historical-data">
+<span id="retrieve-historical-data"></span><h3>Retrieve Historical Data<a class="headerlink" href="#retrieve-historical-data" title="Permalink to this headline">¶</a></h3>
+<p>Historical data was retrieved via single use Python scripts that scrape, process, and commit historical data to the database described in this document. The main modules being used for this are <code class="docutils literal notranslate"><span class="pre">json</span></code>, <code class="docutils literal notranslate"><span class="pre">re</span></code>, <code class="docutils literal notranslate"><span class="pre">requests</span></code>, and <code class="docutils literal notranslate"><span class="pre">pandas</span></code>.</p>
+<div class="section" id="river-run-information">
+<span id="river-run-information"></span><h4>River/Run Information<a class="headerlink" href="#river-run-information" title="Permalink to this headline">¶</a></h4>
+<p>The runs being processed by this application are static and were gathered at the time of initial development. Each run was retrieved from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a>. Initial river IDs are pulled from Professor Paddle’s main page with Chrome dev tools and JQuery. URLs are then generated for each river and retrieved via <code class="docutils literal notranslate"><span class="pre">requests</span></code> and processed character-by-character into a Pandas data frame and saved to ‘/data/rivers.csv’. <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">scrape_river_urls()</span></code></p>
+<p><b>relational mapping</b> - <i>river_run</i></p>
+<ul class="simple">
+<li><em>river_id</em>: <em>integer</em> PK as pulled  from <a alt='Professor Paddle' href='http://www.professorpaddle.com'>Professor Paddle </a></li>
+<li>class_rating: <em>varchar(31)</em> - white water rating</li>
+<li>max_level: <em>integer</em> - maximum recommended stream flow for run</li>
+<li>min_level: <em>integer</em> - minimum recommended stream flow for run</li>
+<li>put_in_latitude: <em>real</em> - run starting point latitude (DD), FK-&gt;[addresses].latitude</li>
+<li>put_in_longitude: <em>real</em> - run starting point longitude (DD), FK-&gt;[addresses].longitude</li>
+<li>distance: <em>real</em> - run length</li>
+<li>river_name: <em>varchar(255)</em> - name of river</li>
+<li>run_name: <em>varchar(255)</em> - name of run</li>
+<li>take_out_latitude: <em>real</em> - run ending point latitude (DD), FK-&gt;[addresses].latitude</li>
+<li>take_out_longitude: <em>real</em> - run ending point longitude (DD), FK-&gt;[addresses].longitude</li>
+</ul>
+<p>Associated address information is processed in <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">parse_addresses_from_rivers()</span></code>.</p>
+</div>
+<div class="section" id="noaa-temperature-precipitation-data">
+<span id="noaa-temperature-precipitation-data"></span><h4>NOAA Temperature/Precipitation Data<a class="headerlink" href="#noaa-temperature-precipitation-data" title="Permalink to this headline">¶</a></h4>
+<p>Temperature and precipitation data was gathered through individual requests for each station on the NOAA website. Each request returned a CSV file with all recording for the specific weather station. Addresses and stations were parsed from these files in <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">parse_addresses_and_stations_from_precip()</span></code>.</p>
+</div>
+<div class="section" id="noaa-snowpack-data">
+<span id="noaa-snowpack-data"></span><h4>NOAA Snowpack Data<a class="headerlink" href="#noaa-snowpack-data" title="Permalink to this headline">¶</a></h4>
+<p>Initial snowpack data was retrieved from <a alt='NOAA snowpack' href='https://www.ncdc.noaa.gov/snow-and-ice/daily-snow/'>NOAA</a>.
+The function <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">scrape_snowfall()</span></code> retrieves snowpack data for all reporting stations in Washington, one day at a
+time. Results are saved to ‘data/snowfall.csv’ and manually uploaded to the database.</p>
+<p><b>relational mapping</b> - stored to <i>metric</i>, <i>station</i>, and <i>measurement</i>gathered attributes are</p>
+<ul class="simple">
+<li>date: <em>timestamp</em> - timestamp measurement was recorded</li>
+<li>lat:  <em>real</em> - geographical latitude of reporting station</li>
+<li>lon:  <em>real</em> - geographical longitude of reporting station</li>
+<li>location_name: <em>varchar(31)</em> - name of reporting station</li>
+<li>depth: <em>real</em> - recorded depth of snow measured in inches</li>
+</ul>
+<p>Addresses and stations associated with each measurement are processed from their respective latitude and longitudes through <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">parse_addresses_and_stations_from_snowfal()</span></code> and saved to the csv file described above.</p>
+</div>
+<div class="section" id="location-data">
+<span id="location-data"></span><h4>Location Data<a class="headerlink" href="#location-data" title="Permalink to this headline">¶</a></h4>
+<p>Address information is retrieved using <code class="docutils literal notranslate"><span class="pre">requests</span></code> through Google’s <a alt='Google Geocoding' href='https://developers.google.com/maps/documentation/geocoding/start'>Geocoding API</a>. Each latitude and longitude pair throughout the application is processed through the API in order to retrieve related political boundary information. JSON results are processed through  <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">parse_location_components()</span></code> and inserted into the database.</p>
+<p><b>relational mapping</b>
+<b>state</b> - <i>state indentification information</i></p>
+<ul class="simple">
+<li>short_name: <em>varchar(2)</em> -  two letter state indicator code, PK</li>
+<li>long_name: <em>varchar(31)</em> - state’s full spelling</li>
+</ul>
+<p><b>address</b> - <i>political boundary data related to GPS locations</i></p>
+<ul class="simple">
+<li>latitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK</li>
+<li>longitude: <em>real</em> - GPS position in decimal degree (DD) formatting, PK</li>
+<li>city: <em>varchar(255)</em> - name of closest city</li>
+<li>county: <em>varchar(255)</em> - name of county</li>
+<li>state: <em>varchar(2)</em> - two letter state identification code, FK-&gt;[state].short_name</li>
+<li>address: <em>varchar(255)</em> - closest street address to point</li>
+<li>zip: <em>varchar(10)</em> - zip code</li>
+</ul>
+</div>
+<div class="section" id="usgs-streamflow-data">
+<span id="usgs-streamflow-data"></span><h4>USGS Streamflow Data<a class="headerlink" href="#usgs-streamflow-data" title="Permalink to this headline">¶</a></h4>
+<p>To collect streamflow data for all river runs we retrieved a list of all <a href='https://waterdata.usgs.gov/wa/nwis/uv'>USGS stream sites</a> (stations) in the state of Washington. Using this list and python’s <code class="docutils literal notranslate"><span class="pre">requests</span></code> module, the retrieval process is outlined below:</p>
+<ul class="simple">
+<li>Call USGS’s Instantaneous Values API for each combination of site and metric, returning data in a JSON format</li>
+<li>Extract timestamp and measurement value from JSON format and write to CSV file</li>
+<li>Insert records in CSV file into the database</li>
+</ul>
+<p><b>relational mapping</b> - <i>measurement</i></p>
+<ul class="simple">
+<li>site_id: <em>varchar(31)</em> - id of site taken directly from list of all USGS stream sites</li>
+<li>metric_id: <em>varchar(31)</em> - id of metric taken directly from list of all USGS metrics</li>
+<li>date_time: <em>timestamp</em> - timestamp when measurement was recorded</li>
+<li>value: <em>real</em> - recorded measurement</li>
+</ul>
+</div>
+</div>
+<div class="section" id="continuous-data-retrieval">
+<span id="continuous-data-retrieval"></span><h3>Continuous Data Retrieval<a class="headerlink" href="#continuous-data-retrieval" title="Permalink to this headline">¶</a></h3>
+<p>Retrieving all static and historical data need only be done once, but to keep the data up to date we need to continuously retrieve and integrate all new time series data into the database. The following data is retrieved on a daily basis.</p>
+<div class="section" id="darksky-temperature-precipitation-data">
+<span id="darksky-temperature-precipitation-data"></span><h4>DarkSky Temperature/Precipitation Data<a class="headerlink" href="#darksky-temperature-precipitation-data" title="Permalink to this headline">¶</a></h4>
+<p>Since retrieving historical temperature and precipitation data from NOAA involves sending a request and receiving an email in response containing a link to download the requested data (a process that would be cumbersome to repeat on a daily basis), <a href='https://darksky.net/dev'>DarkSky</a> (DarkSky), which provided simpler automatability was used for ongoing temperature and precipitation data. Continuous API calls to DarkSky are made with the <code class="docutils literal notranslate"><span class="pre">continuous.py</span></code> module.</p>
+</div>
+<div class="section" id="usgs-streamflow-data">
+<span id="id1"></span><h4>USGS Streamflow Data<a class="headerlink" href="#usgs-streamflow-data" title="Permalink to this headline">¶</a></h4>
+<p><a href='https://waterservices.usgs.gov/rest/IV-Test-Tool.html'>USGS’s Instantaneous Values API</a> makes it easy to automate the continuous retrieval of time series data. Repeated calls to the USGS Instantaneous Values REST web service are also made using the <code class="docutils literal notranslate"><span class="pre">continuous.py</span></code> module.</p>
+</div>
+<div class="section" id="snowpack-data">
+<span id="snowpack-data"></span><h4>Snowpack Data<a class="headerlink" href="#snowpack-data" title="Permalink to this headline">¶</a></h4>
+<p>Snowpack is not currently being used as an exogenous predictor in our models, so it is not being collected on an ongoing basis at this time. However, as part of the process of retrieving historical snowpack data, we retrieved time series data from this source one day at a time. So, the <code class="docutils literal notranslate"><span class="pre">scrape_snowfall()</span></code> function could seemlessly be reused to continuously retrieve new data in the future, with the only modification needed is to automate the uploading of snowpack data into the database.</p>
+</div>
+</div>
+<div class="section" id="rdbms">
+<span id="rdbms"></span><h3>RDBMS<a class="headerlink" href="#rdbms" title="Permalink to this headline">¶</a></h3>
+<p>All data is gathered and processed according to this specification before being committed for persistence. Persistence is managed through an RDBMS - PostgresSQL 10.3 - Ubuntu Server 16.04 LTE.
+</br>
+<img alt="RiverRunner schema" src="../_images/schema.png" />
+<br/>
+Each table listed below indices on it’s primary key unless otherwise noted.</p>
+<p><b>station</b> - <i>weather reporting stations for both NOAA and USGS data points</i></p>
+<ul class="simple">
+<li>station_id <em>varchar(31)</em>: the station id for the weather station as listed by the station’s data , PK</li>
+<li>source <em>varchar(4)</em> the original data source author</li>
+<li>name <em>varach(255)</em> the human readable statin name as listed by original data source</li>
+<li>latitude <em>real</em> station’s geographical latitude (DD), FK-&gt;[addresses].latitude</li>
+<li>longitude <em>real</em> station’s geographical longitude (DD), FK-&gt;[addresses].longitude</li>
+</ul>
+<p><i>indices</i></p>
+<ul class="simple">
+<li>clustered index on (latitude, longitude)</li>
+<li>unclustered index on (station_id)</li>
+</ul>
+<p><b>station_river_distance</b> - <i>stores geographical distances between each run and each weather station.</i></p>
+<ul class="simple">
+<li>station_id <em>varchar(31)</em>: station for which distance is computed, PK, FK-&gt;[station].station_id</li>
+<li>run_id <em>integer</em>: river for which distance is computed, PK, FK-&gt;[river_run].river_id</li>
+<li>distance <em>real</em>: distance measured in miles from run’s starting point to weather station</li>
+</ul>
+<p><i>indices</i></p>
+<ul class="simple">
+<li>clustered index on (put_in_distance)</li>
+<li>unclustered index on (station_id, river_id)</li>
+</ul>
+<p>Distances are calculated via the following code snippet</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="n">a</span> <span class="o">=</span> <span class="n">sin</span><span class="p">((</span><span class="n">lat2</span><span class="o">-</span><span class="n">lat1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">sin</span><span class="p">((</span><span class="n">lon2</span><span class="o">-</span><span class="n">lon1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">atan2</span><span class="p">(</span><span class="n">sqrt</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">a</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">r</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="mf">0.621371</span>
+</pre></div>
+</div>
+<p><b>metric</b> - <i>stores all the metric types that will be used for prediction</i></p>
+<ul class="simple">
+<li>metric_id <em>varchar(31)</em>: the metric’s id as listed by original data source, PK</li>
+<li>name <em>varchar(31)</em>: the metric’s human readable name as listed by original data source</li>
+<li>description <em>varchar(255)</em>: brief description of the metric</li>
+<li>units <em>varchar(31)</em>: units for which the metric is recorded in</li>
+</ul>
+<p><b>measurement</b> - <i>stores all gathered measurements from each weather station</i></p>
+<ul class="simple">
+<li>station_id <em>varchar(31)</em> id of weather station for which the measurement was recorded, PK, FK-&gt;[station].station_id</li>
+<li>metric_id <em>varchar(31)</em> id of associated metric being measured, PK, FK-&gt;[metric].metric_id</li>
+<li>date_time <em>timestamp</em> timestamp for when the measurement was recorded, PK</li>
+<li>value <em>real</em> the measurement value recorded</li>
+</ul>
+<p><i>indices</i></p>
+<ul class="simple">
+<li>clustered index on (date_time)</li>
+<li>unclustered index on (station_id), (metric_id)</li>
+</ul>
+<p><b>river_run</b> - <i>stores static river run information</i></p>
+<ul class="simple">
+<li>run_id <em>integer</em> unique identifier for river run, PK</li>
+<li>class_rating <em>varchar(31)</em> class rating (difficulty) for the river run</li>
+<li>max_level <em>integer</em> maximum runnable flow rate</li>
+<li>min_level <em>integer</em> minimum runnable flow rate</li>
+<li>put_in_latitude <em>real</em> latitude of put in location</li>
+<li>put_in_longitude <em>real</em> longitude of put in location</li>
+<li>distance <em>real</em> distance between put in and take out locations</li>
+<li>river_name <em>varchar(255)</em> name of the river that run is on</li>
+<li>run_name <em>varchar(255)</em> run name</li>
+<li>take_out_latitude <em>real</em> latitude of take out location</li>
+<li>take_out_longitude <em>real</em> longitude of take out location</li>
+</ul>
+<p><b>prediction</b> - <i>stores predicted flow rates for each run as generated by ARIMA model</i></p>
+<ul class="simple">
+<li>run_id <em>integer</em> run for which predictions were generated, PK, FK-&gt;[river_run].run_id</li>
+<li>timestamp <em>timestamp</em> date for which prediction was generated, PK</li>
+<li>fr_lb <em>double precision</em> lower error bound of flow rate prediction</li>
+<li>fr <em>double precision</em> predicted flow rate</li>
+<li>fr_ub <em>double precision</em> upper error bound of flow rate prediction</li>
+</ul>
+</div>
+<div class="section" id="object-relational-mapping">
+<span id="object-relational-mapping"></span><h3>Object Relational Mapping<a class="headerlink" href="#object-relational-mapping" title="Permalink to this headline">¶</a></h3>
+<p>ORM is being used to map our Python classes to the database backend. We elected to use <code class="docutils literal notranslate"><span class="pre">sqlalchemy</span></code> for this as it
+gives us more flexibility with hybrid properties and other joining methods. All tables described in the RDMS section above have associated Python classes. This keeps our model fluid and allows easier DB installation through <code class="docutils literal notranslate"><span class="pre">sqlalchemy</span></code>’s <code class="docutils literal notranslate"><span class="pre">create_all()</span></code> method.</p>
+</div>
+<div class="section" id="server-side-predictions">
+<span id="server-side-predictions"></span><h3>Server Side Predictions<a class="headerlink" href="#server-side-predictions" title="Permalink to this headline">¶</a></h3>
+<p>Future river flow rates are predicted using an autoregressive integrated moving average (ARIMA) model generated from historic USGS river flow rate time series data. Temperature and precipitation are included in the models as exogenous predictor variables; snowpack will be included as an exogenous predictor at a later date if deemed useful, but was not used for the first release. Models are generated using the past four years of historical data up to the current day, and predictions are made for the future seven days.</p>
+<p>Exploration of the data was completed using <code class="docutils literal notranslate"><span class="pre">arima_exploration.py</span></code>. The <code class="docutils literal notranslate"><span class="pre">test_stationarity()</span></code> function was used to determine that flow rate is non-stationary on a short timeframe due to annual seasonality but stationary over longer periods of time; since most variation is caused short-term spikes in flow rate, this is averaged out over longer periods. Due to the large difference between the seasonality timeframe (annual) and the prediction timeframe (daily), the best models with the highest probability of convergence resulted from using an ARMA model (no differencing) on several years worth of stationary data for the run. The optimal order of the ARMA model for each run (i.e. p and q parameters) was examined for a few test runs using <code class="docutils literal notranslate"><span class="pre">plot_autocorrs()</span></code> to generate autocorrelation and partial autocorrelation plots for lag order and moving average order respectively. Since this analysis must be done manually, the order of ongoing models is determined using built-in python functions.</p>
+<p>The module <code class="docutils literal notranslate"><span class="pre">arima.py</span></code> is used to build and fit the flow rate models for a given river run. The <code class="docutils literal notranslate"><span class="pre">get_data()</span></code> function retrieves data for a selected run from the database for past four years from the current date using <code class="docutils literal notranslate"><span class="pre">Repository.get_measurements()</span></code> function. Feature engineering to create daily averages of all predictor variables is completed using the <code class="docutils literal notranslate"><span class="pre">daily_avg()</span></code> function. The <code class="docutils literal notranslate"><span class="pre">arima_model()</span></code> function is used to create the model for the given run. ARIMA model orders for each run are determined each time using the python statsmodels.tsa.stattools package’s arma_order_select_ic function using AIC penalized likelihood criteria. These results are then fed along with the data into the python statsmodels.tsa.arima_model package’s ARIMA function to build the model. Finally, the model .forecast function is used to generate predictions for the next seven days. In case of non-convergence at either the order determination or model fitting, <code class="docutils literal notranslate"><span class="pre">arima_model()</span></code> will return the last known flow rate value applied to the next seven days.</p>
+<p>Immediately following daily data retrieval, the ARIMA models are recalculated for each run with the results stored in a dataframe for plotting.</p>
+</div>
+<div class="section" id="dash-client-side-interface">
+<span id="dash-client-side-interface"></span><h3>Dash Client Side Interface<a class="headerlink" href="#dash-client-side-interface" title="Permalink to this headline">¶</a></h3>
+<p>The front end user interface is a simple web based UI implemented by the <code class="docutils literal notranslate"><span class="pre">ui.py</span></code> module. The UI is built using Dash, and consists of:</p>
+<ul class="simple">
+<li>A dropdown menu with searching capabilities for river run selection</li>
+<li>A plot for the selected river run containing:<ul>
+<li>21 days of historic flow rate</li>
+<li>7 days of future predicted flow rate</li>
+<li>A highlighted band showing the maximum and minimum runnable levels for the run</li>
+</ul>
+</li>
+<li>A map of all put in locations, color coded by runnability status</li>
+</ul>
+<p>Basic interactivity is also implemented with Dash, including a popup with flow rate details upon hover for the plot, and selection of river run using the dropdown or the map.</p>
+</div>
+</div>
+<div class="section" id="interactions">
+<span id="interactions"></span><h2>Interactions<a class="headerlink" href="#interactions" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="use-case-1-the-paddler">
+<span id="use-case-1-the-paddler"></span><h3>Use Case 1: The Paddler<a class="headerlink" href="#use-case-1-the-paddler" title="Permalink to this headline">¶</a></h3>
+<p>The paddler requests to view stream flow predictions for a specific kayaking run. The user has two options for finding a river’s flow rate predictions:</p>
+<ol class="simple">
+<li>User searches for a river by typing the river name in the top search bar. The bar will autopopulate with a drop down to filter run names as the user types. Selecting a run will request a prediction.</li>
+<li>User views the runs populated on the map, clicking a point to retrieve predictions.</li>
+</ol>
+<p>The page will have loaded with a .csv file containing predictions for the following two weeks. Using javascript, the prediction image will redraw with the selected run’s prediction.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../data_abstraction/index.html" class="btn btn-neutral float-right" title="Data Abstraction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../functional_specification/functional_specification.html" class="btn btn-neutral" title="Functional Specification" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

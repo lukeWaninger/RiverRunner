@@ -1,0 +1,258 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Functional Specification &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Design Specification" href="../design_specification/design_specification.html" />
+    <link rel="prev" title="Welcome to River Runner" href="../index.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Functional Specification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#users">Users</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#use-cases">Use Cases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mockup">Mockup</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Functional Specification</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/functional_specification/functional_specification.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="functional-specification">
+<span id="functional-specification"></span><h1>Functional Specification<a class="headerlink" href="#functional-specification" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="background">
+<span id="background"></span><h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>Whitewater kayaking is a popular sport around Washington state where there are many runnable rivers within a short drive from urban areas. What draws many people to the sport is its dynamic nature; it is fast paced and intense, and even running the same stretch of river can be a totally different experience each time depending on the flow conditions. Many river’s flow rates change quickly and dramatically, meaning paddlers must be ready to adapt to rapidly changing conditions and able to determine whether a river is runnable. A river that may be an easy class III today might be a more difficult class IV or entirely unrunnable tomorrow.</p>
+<p>For many sports that are weather-dependent, modern day weather forcasting provides relatively accurate predictions of conditions up to ten days in advance making it relatively easy to plan ahead for any outdoor activities. For whitewater kayaking however, there are currently no reliable tools which can predict a river’s flow rate, meaning paddlers are often left to figure out whether they can run a given river less than a day in advance or even the morning of their planned trip. Especially for newer paddlers who have fewer choices of rivers to run, or paddlers who have to plan ahead for traveling longer distances to get to the river, this can lead to many cancelled trips and dissapointing weekends without paddling. Being able to get a sense of what rivers might be runnable further than a day or two in advance would undoubtedly help many paddlers get the most of their time on the river.</p>
+<p>With RiverRunner, the goal is to provide paddlers in Washington<sup>1</sup> with a simple web-based tool that will allow them to see a prediction of a given river run’s flow rate in order to help plan future kayaking trips. By using autoregressive integrated moving average (ARIMA) models on public USGS historical river flow rate data, along with exogenous regressors such as precipitation, snow pack, and temperature, we hope to provide accurate predictions of daily average river flow rates up to two weeks in advance. The tool will be relatively simple to create and maintain, easy to use, and will provide a clear benefit to the whitewater community in Washington State.</p>
+<p><sub><sup>1</sup>The current scope of the RiverRunner project only includes predictions for whitewater runs in Washington State. Depending on the success of the models and demand, this could potentially be expanded to include rivers in other states in the future.</sub></p>
+</div>
+<div class="section" id="users">
+<span id="users"></span><h2>Users<a class="headerlink" href="#users" title="Permalink to this headline">¶</a></h2>
+<p>The target users of RiverRunner are individuals who whitewater kayak in Washington state and would benefit from knowing in advance whether a river will be runnable. This could include recreational paddlers, professional paddlers, kayaking competition organizers, and kayaking companies.</p>
+<p>For all of these users, the computer experience required to use the tool is general familiarity with operating simple web-based graphical user interfaces. The domain knowledge required is familiarity with the sport and the impact of river flow levels on paddling conditions. Users will need to understand what it means for a river to be within its stated runnable flow range, as well as how conditions could vary given a certain margin of error in the predicted flow rate.</p>
+</div>
+<div class="section" id="use-cases">
+<span id="use-cases"></span><h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<p>Paddlers will use RiverRunner to help plan their kayaking trips by getting a prediction of a selected river’s daily average flow rate up to two weeks in advance, which will provide an indication of whether the river will be runnable. The user will access the tool through a webpage, and select a river run by name from a drop-down filter. The system will respond with a plot of that run’s historic flow rate for the past four weeks along with the flow rate predicted by the model, which will extend up to two weeks into the future. The plot will include a highlighted band between the maximum and minimum runnable flows for the selected run (where available) so the user can easily identify whether the predicted flow rate falls in the desired range. The tool will also include a map which will update based on the selected river run to show the put-in and take-out locations.</p>
+</div>
+<div class="section" id="mockup">
+<span id="mockup"></span><h2>Mockup<a class="headerlink" href="#mockup" title="Permalink to this headline">¶</a></h2>
+<p>The picture below shows a rough mockup of the planned RiverRunner user interface:</p>
+<p><img alt="RiverRunner mockup" src="../_images/mockup.png" /></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../design_specification/design_specification.html" class="btn btn-neutral float-right" title="Design Specification" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../index.html" class="btn btn-neutral" title="Welcome to River Runner" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

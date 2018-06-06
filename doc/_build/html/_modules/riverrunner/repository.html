@@ -1,0 +1,508 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>riverrunner.repository &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>riverrunner.repository</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for riverrunner.repository</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">module defining the class Repository</span>
+
+<span class="sd">The repository class represents an abstraction for the user to interface with the backend. It provides</span>
+<span class="sd">standard CRUD operations as defined below.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">psycopg2</span>
+<span class="kn">from</span> <span class="nn">riverrunner</span> <span class="k">import</span> <span class="n">context</span>
+<span class="kn">from</span> <span class="nn">riverrunner.context</span> <span class="k">import</span> <span class="n">Measurement</span><span class="p">,</span> <span class="n">Prediction</span><span class="p">,</span> <span class="n">RiverRun</span><span class="p">,</span> <span class="n">Station</span><span class="p">,</span> <span class="n">StationRiverDistance</span>
+<span class="kn">from</span> <span class="nn">riverrunner</span> <span class="k">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="k">import</span> <span class="n">SQLAlchemyError</span>
+
+
+<div class="viewcode-block" id="Repository"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository">[docs]</a><span class="k">class</span> <span class="nc">Repository</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;interface between application and backend</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">connection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">session</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__context</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">Context</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">DATABASE</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__context</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span> <span class="o">=</span> <span class="n">session</span>
+
+        <span class="k">if</span> <span class="n">connection</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__connection</span> <span class="o">=</span> <span class="n">psycopg2</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="o">**</span><span class="n">settings</span><span class="o">.</span><span class="n">PSYCOPG_DB</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__connection</span> <span class="o">=</span> <span class="n">connection</span>
+
+    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Repository.clear_predictions"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.clear_predictions">[docs]</a>    <span class="k">def</span> <span class="nf">clear_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;delete all existing predictions from database</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">         None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Prediction</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Prediction</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Repository.get_all_runs"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.get_all_runs">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;retrieve all runs from db</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            DataFrame: containing all runs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">runs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">dict</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RiverRun</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="n">runs</span></div>
+
+<div class="viewcode-block" id="Repository.get_all_runs_as_list"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.get_all_runs_as_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_runs_as_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns all runs as select list</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            [{&#39;label&#39;, &#39;value&#39;}]: list of select options for drop down</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RiverRun</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">SQLAlchemyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Repository.get_all_stations"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.get_all_stations">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_stations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;retrieve all weather stations from db</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame: containing all weather stations</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Station</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">Station</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="n">source</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Station</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="n">stations</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">dict</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">stations</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Repository.get_measurements"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.get_measurements">[docs]</a>    <span class="k">def</span> <span class="nf">get_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">metric_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get a set of measurements from the db</span>
+
+<span class="sd">        * not supplying a start and end date will return measurements covering the previous 30 days. add a start date to retrieve older</span>
+<span class="sd">        * supplying a start date without and end date will pull all measurements up to the current day</span>
+<span class="sd">        * if no min distance (or a negative distance) is provided the method will return measurements associated with the closest weather station from each unique source</span>
+<span class="sd">        * supplying a distance will NOT guarantee both NOAA and USGS stations are retrieved</span>
+<span class="sd">        * supplying an end date without a start will raise an exception</span>
+<span class="sd">        * supplying an end date earlier than the start will raise an exception</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_id (int): retrieve measurements associated with a specific run</span>
+<span class="sd">            start_date (DateTime) - optional: beginning of date range for which to retrieve measurements. if None is</span>
+<span class="sd">            supplied the function will default to retrieving the past thirty days</span>
+<span class="sd">            end_date (DateTime) - optional: end of date range for which to retrieve measurements</span>
+<span class="sd">            min_distance (float) - optional: distance from run for which to retrieve measurements</span>
+<span class="sd">            metric_ids ([str]) - optional: list of metric ids to filter</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame: containing measurements within the given set of parameters</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">             ValueError: if start date is later than end date</span>
+<span class="sd">             ValueError: if start date is is later than current date</span>
+<span class="sd">             ValueError: if end date is supplied without a starting date</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># ensure dates are correct</span>
+        <span class="k">if</span> <span class="n">start_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">start_date</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;start date cannot be later than today&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">end_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">end_date</span> <span class="o">&lt;</span> <span class="n">start_date</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;end date cannot be before start date&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">end_date</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="c1"># ensure the run_id exists if it was supplied</span>
+        <span class="k">def</span> <span class="nf">raise_rid_error</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;run_id does not exist: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">run_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">run_id</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RiverRun</span><span class="o">.</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">RiverRun</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">raise_rid_error</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">raise_rid_error</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_rid_error</span><span class="p">()</span>
+
+        <span class="c1"># define the stations we need to reference</span>
+        <span class="n">stations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">StationRiverDistance</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span>
+                                        <span class="n">StationRiverDistance</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+                                        <span class="n">Station</span><span class="o">.</span><span class="n">source</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Station</span><span class="p">,</span> <span class="p">(</span><span class="n">Station</span><span class="o">.</span><span class="n">station_id</span> <span class="o">==</span> <span class="n">StationRiverDistance</span><span class="o">.</span><span class="n">station_id</span><span class="p">))</span> \
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">StationRiverDistance</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">StationRiverDistance</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="c1"># make sure at least one of each weather source is returned</span>
+        <span class="k">if</span> <span class="n">min_distance</span> <span class="o">&lt;=</span> <span class="mf">0.</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">noaa</span><span class="p">,</span> <span class="n">usgs</span><span class="p">,</span> <span class="n">snow</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;NOAA&#39;</span> <span class="o">==</span> <span class="n">station</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+                    <span class="n">tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">station</span><span class="p">)</span>
+                    <span class="n">noaa</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="s1">&#39;USGS&#39;</span> <span class="o">==</span> <span class="n">station</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+                    <span class="n">tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">station</span><span class="p">)</span>
+                    <span class="n">usgs</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="s1">&#39;SNOW&#39;</span> <span class="o">==</span> <span class="n">station</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+                    <span class="n">tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">station</span><span class="p">)</span>
+                    <span class="n">snow</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="n">noaa</span> <span class="ow">and</span> <span class="n">usgs</span> <span class="ow">and</span> <span class="n">snow</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+            <span class="n">stations</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stations</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stations</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">min_distance</span><span class="p">]</span>
+
+        <span class="n">station_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stations</span><span class="p">]</span>
+
+        <span class="c1"># make the query</span>
+        <span class="k">if</span> <span class="n">metric_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">measurements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Measurement</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Measurement</span><span class="o">.</span><span class="n">date_time</span> <span class="o">&gt;=</span> <span class="n">start_date</span><span class="p">,</span>
+                        <span class="n">Measurement</span><span class="o">.</span><span class="n">date_time</span> <span class="o">&lt;</span> <span class="n">end_date</span><span class="p">,</span>
+                        <span class="n">Measurement</span><span class="o">.</span><span class="n">station_id</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">station_ids</span><span class="p">),</span> <span class="p">)</span> \
+                <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">measurements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Measurement</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Measurement</span><span class="o">.</span><span class="n">date_time</span> <span class="o">&gt;=</span> <span class="n">start_date</span><span class="p">,</span>
+                        <span class="n">Measurement</span><span class="o">.</span><span class="n">date_time</span> <span class="o">&lt;</span> <span class="n">end_date</span><span class="p">,</span>
+                        <span class="n">Measurement</span><span class="o">.</span><span class="n">station_id</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">station_ids</span><span class="p">),</span>
+                        <span class="n">Measurement</span><span class="o">.</span><span class="n">metric_id</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">metric_ids</span><span class="p">))</span> \
+                <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">dict</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">measurements</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="Repository.get_run"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.get_run">[docs]</a>    <span class="k">def</span> <span class="nf">get_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;retrieve a single run</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            run_id (int): run id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">run_id</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;run id does not exist&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RiverRun</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">RiverRun</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;run id does not exist&#39;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">run</span>
+        <span class="k">except</span> <span class="n">SQLAlchemyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+<div class="viewcode-block" id="Repository.put_measurements_from_csv"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.put_measurements_from_csv">[docs]</a>    <span class="k">def</span> <span class="nf">put_measurements_from_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csv_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; add a file of measurements</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">            * will overwrite previous values with same primary key</span>
+<span class="sd">            * connection will rollback transaction if commit fails</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            csv_file (file): name of file containing records to insert</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: success/exception</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: if error occurs while connected to database</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">__connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">cursor</span><span class="o">.</span><span class="n">copy_from</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="s2">&quot;tmp_measurement&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                    INSERT into measurement</span>
+<span class="s2">                        SELECT * FROM tmp_measurement</span>
+<span class="s2">                    ON CONFLICT (station_id, metric_id, date_time)</span>
+<span class="s2">                        DO UPDATE SET value = EXCLUDED.value;</span>
+<span class="s2">                &quot;&quot;&quot;</span><span class="p">)</span>
+                <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                    DELETE FROM tmp_measurement;</span>
+<span class="s2">                &quot;&quot;&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">__connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__connection</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="Repository.put_measurements_from_list"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.put_measurements_from_list">[docs]</a>    <span class="k">def</span> <span class="nf">put_measurements_from_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">measurements</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add a list of measurements to the database</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            measurements [Measurement]: list of measurements to put in the db</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">measurements</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">SQLAlchemyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+<div class="viewcode-block" id="Repository.put_predictions"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.put_predictions">[docs]</a>    <span class="k">def</span> <span class="nf">put_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;add a set of predictions</span>
+
+<span class="sd">        Args</span>
+<span class="sd">            predictions ([Prediction]): set of predictions to insert</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">predictions</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Repository.put_station_river_distances"><a class="viewcode-back" href="../../repository/index.html#riverrunner.repository.Repository.put_station_river_distances">[docs]</a>    <span class="k">def</span> <span class="nf">put_station_river_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;put station river distance objects in the db</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            strd ([StationRiverDistance]): list of StationRiverDistances to add</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">strd</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="n">strd</span> <span class="o">=</span> <span class="p">[</span><span class="n">strd</span><span class="p">]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">strd</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+
+            <span class="k">return</span> <span class="kc">False</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

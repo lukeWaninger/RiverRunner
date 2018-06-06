@@ -1,0 +1,403 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Continous Data Retrieval &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Flow Rate Predictions" href="../prediction/index.html" />
+    <link rel="prev" title="Repository" href="../repository/index.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../repository/index.html">Repository</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Continous Data Retrieval</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Continous Data Retrieval</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/continuous_retrieval/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="continous-data-retrieval">
+<h1>Continous Data Retrieval<a class="headerlink" href="#continous-data-retrieval" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<span class="target" id="module-riverrunner.continuous_retrieval"></span><p>script that scrapes and uploads DarkSky and USGS data</p>
+<p class="rubric">Examples</p>
+<p>python continuous_retrieval.py [–csv] –manual start-date end-date</p>
+<ul class="simple">
+<li>scrapes and uploads data over the specified date range (inclusive)</li>
+<li>start-date and end-date must be in ISO format, ‘YYYY-MM-DD’</li>
+<li>optional argument to insert records into database from CSV file (for USGS data only)</li>
+</ul>
+<p>python continuous_retrieval.py [–csv] –daily [days-back]</p>
+<ul class="simple">
+<li>scrapes and uploads data over date range</li>
+<li>date range is from days-back before yesterday to yesterday (inclusive)</li>
+<li>optional days-back parameter must be an integer (defaults to 0)</li>
+<li>optional argument to insert records into database from CSV file (for USGS data only)</li>
+</ul>
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.fill_noaa_gaps">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">fill_noaa_gaps</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#fill_noaa_gaps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.fill_noaa_gaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>use as needed to fill gaps in weather measurements</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>start_date</strong> – the start day, included in API calls</li>
+<li><strong>end_date</strong> – the end day, inclusive</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.get_noaa_predictions">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">get_noaa_predictions</code><span class="sig-paren">(</span><em>run_id</em>, <em>session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#get_noaa_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.get_noaa_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve NOAA predictions for run</p>
+<dl class="docutils">
+<dt>Args</dt>
+<dd>run_id (int): run
+session (Session): database session</dd>
+<dt>Returns</dt>
+<dd>DataFrame: containing predictions</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.get_usgs_site_ids">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">get_usgs_site_ids</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#get_usgs_site_ids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.get_usgs_site_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve USGS site ids from database</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of site ids</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">[str]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.get_usgs_json_data">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">get_usgs_json_data</code><span class="sig-paren">(</span><em>site_id</em>, <em>start_date</em>, <em>end_date</em>, <em>param_code</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#get_usgs_json_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.get_usgs_json_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve JSON data for a specific USGS site, parameter, and date range</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>site_id</strong> (<em>str</em>) – string representation of site id</li>
+<li><strong>start_date</strong> (<em>str</em>) – start date in ISO format, ‘YYYY-MM-DD’</li>
+<li><strong>end_date</strong> (<em>str</em>) – end date in ISO format, ‘YYYY-MM-DD’</li>
+<li><strong>param_code</strong> (<em>str</em>) – string representation of parameter code</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">map relating timestamps to values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict[str, str]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.make_station_observation_request">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">make_station_observation_request</code><span class="sig-paren">(</span><em>station</em>, <em>day</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#make_station_observation_request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.make_station_observation_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>make a request for observations to the DarkSky API</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>station</strong> – (Station) weather station to retrieve measurments</li>
+<li><strong>day</strong> – (str) datetime in iso format</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">[Measurements] if call was successful
+None otherwise</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.put_24hr_observations">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">put_24hr_observations</code><span class="sig-paren">(</span><em>session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#put_24hr_observations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.put_24hr_observations" title="Permalink to this definition">¶</a></dt>
+<dd><p>get yesterdays observations</p>
+<dl class="docutils">
+<dt>Args</dt>
+<dd>session (Session): database session</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.scrape_usgs_data">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">scrape_usgs_data</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#scrape_usgs_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.scrape_usgs_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>scrape data for all USGS sites and parameters, over the specified date range</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>start_date</strong> (<em>str</em>) – start date in ISO format, ‘YYYY-MM-DD’</li>
+<li><strong>end_date</strong> (<em>str</em>) – end date in ISO format, ‘YYYY-MM-DD’</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">list of full paths of CSV files that were written to</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">[str]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="riverrunner.continuous_retrieval.upload_data_from_file">
+<code class="descclassname">riverrunner.continuous_retrieval.</code><code class="descname">upload_data_from_file</code><span class="sig-paren">(</span><em>csv_file</em>, <em>from_csv=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/continuous_retrieval.html#upload_data_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.continuous_retrieval.upload_data_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>insert all records contained in file to database</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>csv_file</strong> (<em>str</em>) – full path of CSV file containing records</li>
+<li><strong>from_csv</strong> (<em>bool</em>) – whether to insert into database using CSV or ORM (CSV scales better)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">success/exception</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../prediction/index.html" class="btn btn-neutral float-right" title="Flow Rate Predictions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../repository/index.html" class="btn btn-neutral" title="Repository" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

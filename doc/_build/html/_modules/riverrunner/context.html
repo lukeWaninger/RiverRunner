@@ -1,0 +1,646 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>riverrunner.context &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>riverrunner.context</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for riverrunner.context</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for mapping the ORM context to Python classes.</span>
+
+<span class="sd">Classes:</span>
+<span class="sd">    Context: generates a database engine and contains a mangaged database connection through the Session object.</span>
+<span class="sd">        A connection string must be provided and in the following format:</span>
+
+<span class="sd">        DATABASE = {</span>
+<span class="sd">           &#39;drivername&#39;: &#39;postgres&#39;,</span>
+<span class="sd">           &#39;host&#39;: &lt;host name or ip&gt;,</span>
+<span class="sd">           &#39;port&#39;: &#39;5432&#39;,</span>
+<span class="sd">           &#39;username&#39;: &lt;db username&gt;&#39;,</span>
+<span class="sd">           &#39;password&#39;: &lt;db password&gt;,</span>
+<span class="sd">           &#39;database&#39;: &lt;db name&gt;</span>
+<span class="sd">        }</span>
+
+<span class="sd">        Any table not present or not matching the definitions below will be created or updated during</span>
+<span class="sd">        context initialization.</span>
+
+<span class="sd">    ORM Classes: map objects their respective type to their associated database tables. See the design</span>
+<span class="sd">    specification for more detailed information. Mapped objects defined below are: Address, Measurement,</span>
+<span class="sd">    Metric, Prediction, RiverRun, State, Station, StationRiverDistance, and TmpMeasurement.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="k">import</span> <span class="n">create_engine</span><span class="p">,</span> <span class="n">select</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.engine.url</span> <span class="k">import</span> <span class="n">URL</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="k">import</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span> <span class="n">Index</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">,</span> <span class="n">ForeignKeyConstraint</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="k">import</span> <span class="n">relationship</span><span class="p">,</span> <span class="n">sessionmaker</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="k">import</span> <span class="n">OperationalError</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.ext.declarative</span> <span class="k">import</span> <span class="n">declarative_base</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.ext.hybrid</span> <span class="k">import</span> <span class="n">hybrid_property</span>
+
+<span class="sd">&quot;&quot;&quot; SQLAlchemy declarative base for ORM features &quot;&quot;&quot;</span>
+<span class="n">Base</span> <span class="o">=</span> <span class="n">declarative_base</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Context"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.Context">[docs]</a><span class="k">class</span> <span class="nc">Context</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;generate a managed session with the database</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        Session (sqlalchemy.orm.sessionmaker): managed connection to database. `see more &lt;http://docs.sqlalchemy.org/en/latest/orm/session.html&gt;`_.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection_string</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;initialize the connection</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connection_string (dict): must contain {drivername,host,port,username,paassword,database}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="n">URL</span><span class="p">(</span><span class="o">**</span><span class="n">connection_string</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Session</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__engine</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">OperationalError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unable to connect to destination db&quot;</span><span class="p">)</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">101</span><span class="p">)</span>
+
+        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__engine</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Address"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.Address">[docs]</a><span class="k">class</span> <span class="nc">Address</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for addresses</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        address (str): street address limited to 255 characters</span>
+<span class="sd">        city (str): city name limited to 255 characters</span>
+<span class="sd">        county (str): county name limited to 255 characters</span>
+<span class="sd">        latitude (float): geographical latitude in decimal date format (DD)</span>
+<span class="sd">        longitude (float): geographical longit ude in decimal date format (DD)</span>
+<span class="sd">        state (str): two character state identifier</span>
+<span class="sd">        zip (str): zip code limited to 10 characters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;address&#39;</span>
+
+    <span class="n">latitude</span>  <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">address</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+    <span class="n">city</span>    <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+    <span class="n">county</span>  <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+
+    <span class="n">state</span>   <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;state.short_name&#39;</span><span class="p">))</span>
+    <span class="n">state_</span>  <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;State&#39;</span><span class="p">)</span>
+
+    <span class="nb">zip</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+    <span class="n">Index</span><span class="p">(</span><span class="s1">&#39;idx_latlon&#39;</span><span class="p">,</span> <span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&lt;Address(latitude=&quot;</span><span class="si">%s</span><span class="s1">&quot;, longitude=&quot;</span><span class="si">%s</span><span class="s1">&quot;)&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">longitude</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">city</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Measurement"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.Measurement">[docs]</a><span class="k">class</span> <span class="nc">Measurement</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for measurements</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        date_time (DateTime): timestamp for when the measurement was taken</span>
+<span class="sd">        metric_id (int): reference to the metric gathered</span>
+<span class="sd">        station_id (str): reference to the weather station that gathered the measurement</span>
+<span class="sd">        value (float): the value recorded</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;measurement&#39;</span>
+
+    <span class="n">date_time</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">metric_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;metric.metric_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">metric</span>    <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Metric&#39;</span><span class="p">)</span>
+
+    <span class="n">station_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;station.station_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">station</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Station&#39;</span><span class="p">)</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">)</span>
+
+    <span class="n">Index</span><span class="p">(</span><span class="s1">&#39;idx_station&#39;</span><span class="p">,</span> <span class="s1">&#39;station_id&#39;</span><span class="p">)</span>
+    <span class="n">Index</span><span class="p">(</span><span class="s1">&#39;idx_date_time&#39;</span><span class="p">,</span> <span class="s1">&#39;date_time&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;&lt;Measurement(station_id=&quot;</span><span class="si">{self.station_id}</span><span class="s1">&quot;, datetime=&quot;</span><span class="si">{self.date_time}</span><span class="s1">&quot;, metric=&quot;</span><span class="si">{self.metric_id}</span><span class="s1">&quot;)&gt;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;station: </span><span class="si">%s</span><span class="s1">, datetime: </span><span class="si">%s</span><span class="s1">, metric: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> \
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">date_time</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_id</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;dictionary representation of the measurement&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;date_time&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">date_time</span><span class="p">,</span>
+            <span class="s1">&#39;metric_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_id</span><span class="p">,</span>
+            <span class="s1">&#39;station_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span>
+            <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Metric"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.Metric">[docs]</a><span class="k">class</span> <span class="nc">Metric</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for metrics</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        metric_id (int): metric id</span>
+<span class="sd">        description (str): a short description of the metric</span>
+<span class="sd">        units (str): units the metric is gathered in</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;metric&#39;</span>
+
+    <span class="n">metric_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">31</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">description</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+    <span class="n">name</span>  <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+    <span class="n">units</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">31</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;&lt;Metric(metric_id=&quot;</span><span class="si">{self.metric_id}</span><span class="s1">&quot;, name=&quot;</span><span class="si">{self.name}</span><span class="s1">&quot;)&gt;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;metric_id: </span><span class="si">{self.metric_id}</span><span class="s1">, name: </span><span class="si">{self.name}</span><span class="s1">&#39;</span></div>
+
+
+<div class="viewcode-block" id="Prediction"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.Prediction">[docs]</a><span class="k">class</span> <span class="nc">Prediction</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for predictions</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        run_id (int): reference to the river run this prediction is referencing</span>
+<span class="sd">        timestamp (DateTime): timestamp for the prediction</span>
+<span class="sd">        fr_lb (float): the lower bound of a confidence interval surrounding the prediction</span>
+<span class="sd">        fr (float): the predicted flow rate</span>
+<span class="sd">        fr_ub (float): the upper bound of a confidence interval surrounding the prediction</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;prediction&#39;</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;river_run.run_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">fr_lb</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">)</span>
+    <span class="n">fr</span>    <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">)</span>
+    <span class="n">fr_ub</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">)</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">year</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">year</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">month</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">month</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">day</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">day</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&lt;Prediction(run_id=&quot;</span><span class="si">%s</span><span class="s1">&quot;, datetime=&quot;</span><span class="si">%s</span><span class="s1">&quot;)&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;run_id: </span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1">, lb: </span><span class="si">%s</span><span class="s1">, fr: </span><span class="si">%s</span><span class="s1">, ub: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> \
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fr_lb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fr_ub</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RiverRun"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.RiverRun">[docs]</a><span class="k">class</span> <span class="nc">RiverRun</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for a river run</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        run_id (int): id</span>
+<span class="sd">        class_rating (str): the run&#39;s white-water class rating</span>
+<span class="sd">        distance (float): the physical length of the run in miles</span>
+<span class="sd">        max_level (int): maximum recommended flow rate</span>
+<span class="sd">        min_level (int): minimum recommended flow rate</span>
+<span class="sd">        put_in_latitude (float): geographical latitude in decimal degree format (DD) representing where the run begins</span>
+<span class="sd">        put_in_longitude (float): geographical longitude (DD) representing where the run begins</span>
+<span class="sd">        river_name (str): the name of the river</span>
+<span class="sd">        run_name (str): the name of the run</span>
+<span class="sd">        take_out_latitude (float) geographical latitude (DD) representing where the run ends</span>
+<span class="sd">        take_out_longitude (float) geographical longitdue (DD) representing where the run ends</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;river_run&#39;</span>
+
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">ForeignKeyConstraint</span><span class="p">(</span>
+            <span class="p">(</span><span class="s1">&#39;put_in_latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;put_in_longitude&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;address.latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;address.longitude&#39;</span><span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">ForeignKeyConstraint</span><span class="p">(</span>
+            <span class="p">(</span><span class="s1">&#39;take_out_latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;take_out_longitude&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;address.latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;address.longitude&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">class_rating</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">31</span><span class="p">))</span>
+    <span class="n">max_level</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">)</span>
+    <span class="n">min_level</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">)</span>
+
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s2">&quot;Prediction&quot;</span><span class="p">,</span> <span class="n">lazy</span><span class="o">=</span><span class="s1">&#39;joined&#39;</span><span class="p">)</span>
+
+    <span class="n">put_in_latitude</span>  <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">put_in_longitude</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">put_in_address</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span>
+        <span class="s1">&#39;Address&#39;</span><span class="p">,</span>
+        <span class="n">primaryjoin</span><span class="o">=</span><span class="s2">&quot;and_(Address.latitude == foreign(RiverRun.put_in_latitude), &quot;</span>
+                    <span class="s2">&quot;Address.longitude == foreign(RiverRun.put_in_longitude))&quot;</span><span class="p">)</span>
+
+    <span class="n">distance</span>   <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">)</span>
+    <span class="n">river_name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+    <span class="n">run_name</span>   <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+
+    <span class="n">take_out_latitude</span>  <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">take_out_longitude</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">take_out_address</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span>
+        <span class="s1">&#39;Address&#39;</span><span class="p">,</span>
+        <span class="n">primaryjoin</span><span class="o">=</span><span class="s2">&quot;and_(Address.latitude == foreign(RiverRun.take_out_latitude), &quot;</span>
+                    <span class="s2">&quot;Address.longitude == foreign(RiverRun.take_out_longitude))&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;RiverRun(run_id=&quot;</span><span class="si">%s</span><span class="s1">&quot;, run_name=&quot;</span><span class="si">%s</span><span class="s1">&quot;)&gt;&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;dictionary representation of the river run&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;run_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+            <span class="s1">&#39;class_rating&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_rating</span><span class="p">,</span>
+            <span class="s1">&#39;max_level&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_level</span><span class="p">,</span>
+            <span class="s1">&#39;min_level&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_level</span><span class="p">,</span>
+            <span class="s1">&#39;put_in_latitude&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">put_in_latitude</span><span class="p">,</span>
+            <span class="s1">&#39;put_in_longitude&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">put_in_longitude</span><span class="p">,</span>
+            <span class="s1">&#39;distance&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+            <span class="s1">&#39;river_name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">river_name</span><span class="p">,</span>
+            <span class="s1">&#39;run_name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span>
+            <span class="s1">&#39;take_out_latitude&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">take_out_latitude</span><span class="p">,</span>
+            <span class="s1">&#39;take_out_longitude&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">take_out_longitude</span>
+        <span class="p">}</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">observed_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&lt;=</span> <span class="n">today</span><span class="p">]</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">predicted_measurements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;</span> <span class="n">today</span><span class="p">]</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">todays_runability</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">)</span>
+
+        <span class="n">td</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">t_prediction</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">today</span> <span class="o">-</span> <span class="n">td</span> <span class="o">&lt;</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&lt;</span> <span class="n">today</span> <span class="o">+</span> <span class="n">td</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_prediction</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">2</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_level</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">t_prediction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">midpoint</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_level</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">min_level</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+            <span class="n">den</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_level</span><span class="o">-</span><span class="n">midpoint</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">fr</span><span class="o">-</span><span class="n">midpoint</span><span class="p">)</span><span class="o">/</span><span class="n">den</span><span class="p">)</span> <span class="k">if</span> <span class="n">den</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mf">1.</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">select_option</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_name</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_id</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="State"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.State">[docs]</a><span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for a state</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        short_name (str): two letter state identification</span>
+<span class="sd">        long_name (str): full state name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;state&#39;</span>
+
+    <span class="n">short_name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">long_name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">31</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Station"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.Station">[docs]</a><span class="k">class</span> <span class="nc">Station</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for a weather station</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        station_id (string): id</span>
+<span class="sd">        source (string): the weather station&#39;s controlling authority {USGS, NOAA}</span>
+<span class="sd">        name (string): name</span>
+<span class="sd">        latitude (float): geographical latitude (DD)</span>
+<span class="sd">        longitude (float): geographical longitude (DD)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;station&#39;</span>
+
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">ForeignKeyConstraint</span><span class="p">(</span>
+            <span class="p">(</span><span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">&#39;address.latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;address.longitude&#39;</span><span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">station_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">31</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+    <span class="n">name</span>   <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">(</span><span class="mi">255</span><span class="p">))</span>
+    <span class="n">latitude</span>  <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">address</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span>
+        <span class="s1">&#39;Address&#39;</span><span class="p">,</span>
+        <span class="n">primaryjoin</span><span class="o">=</span><span class="s2">&quot;and_(Address.latitude == foreign(Station.latitude), &quot;</span>
+                    <span class="s2">&quot;Address.longitude == foreign(Station.longitude))&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;Station(station_id=&quot;</span><span class="si">%s</span><span class="s1">&quot;, name=&quot;</span><span class="si">%s</span><span class="s1">&quot;, source=&quot;</span><span class="si">%s</span><span class="s1">&quot;)&gt;&#39;</span> <span class="o">%</span> \
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;station_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span>
+            <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s1">&#39;latitude&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+            <span class="s1">&#39;longitude&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">longitude</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="StationRiverDistance"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.StationRiverDistance">[docs]</a><span class="k">class</span> <span class="nc">StationRiverDistance</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping describing distances between runs and stations</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        station_id (str): weather station id</span>
+<span class="sd">        run_id (int): river run id</span>
+<span class="sd">        put_in_distance (float): distance in miles from put-in to station</span>
+<span class="sd">        take_out_distance (float): distance in miles from take out-to station</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s1">&#39;station_river_distance&#39;</span>
+
+    <span class="n">station_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;station.station_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">station</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Station&#39;</span><span class="p">)</span>
+
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;river_run.run_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">)</span>
+
+    <span class="nd">@hybrid_property</span>
+    <span class="k">def</span> <span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;weather station source</span>
+
+<span class="sd">        This property is not stored in the backend. It is eager-loaded using a</span>
+<span class="sd">        join on Station when StationRiverDistance objects are returned from the</span>
+<span class="sd">        database</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">source</span></div>
+
+
+<div class="viewcode-block" id="TmpMeasurement"><a class="viewcode-back" href="../../data_abstraction/index.html#riverrunner.TmpMeasurement">[docs]</a><span class="k">class</span> <span class="nc">TmpMeasurement</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ORM mapping for temporary measurements</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        date_time (DateTime): timestamp for when the measurement was taken</span>
+<span class="sd">        metric_id (int): reference to the metric gathered</span>
+<span class="sd">        station_id (str): reference to the weather station that gathered the measurement</span>
+<span class="sd">        value (float): the value recorded</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;tmp_measurement&quot;</span>
+
+    <span class="n">date_time</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">metric_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;metric.metric_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">metric</span>    <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Metric&#39;</span><span class="p">)</span>
+
+    <span class="n">station_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;station.station_id&#39;</span><span class="p">),</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">station</span> <span class="o">=</span> <span class="n">relationship</span><span class="p">(</span><span class="s1">&#39;Station&#39;</span><span class="p">)</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

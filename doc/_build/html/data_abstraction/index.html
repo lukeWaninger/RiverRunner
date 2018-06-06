@@ -1,0 +1,627 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Data Abstraction &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Repository" href="../repository/index.html" />
+    <link rel="prev" title="Design Specification" href="../design_specification/design_specification.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data Abstraction</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Data Abstraction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/data_abstraction/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="data-abstraction">
+<h1>Data Abstraction<a class="headerlink" href="#data-abstraction" title="Permalink to this headline">¶</a></h1>
+<p>This application is built with future scalability in mind. With that, we chose to implement our back-end interface
+with <cite>sqlalchemy</cite>’s ORM features giving us flexibility as we move forward.</p>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="class">
+<dt id="riverrunner.Context">
+<em class="property">class </em><code class="descclassname">riverrunner.</code><code class="descname">Context</code><span class="sig-paren">(</span><em>connection_string</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#Context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.Context" title="Permalink to this definition">¶</a></dt>
+<dd><p>generate a managed session with the database</p>
+<dl class="attribute">
+<dt id="riverrunner.Context.Session">
+<code class="descname">Session</code><a class="headerlink" href="#riverrunner.Context.Session" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>sqlalchemy.orm.sessionmaker</em> – managed connection to database. <a class="reference external" href="http://docs.sqlalchemy.org/en/latest/orm/session.html">see more</a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="docutils">
+<dt>Note: Although the __init__ functions are not defined for each ORM mapping object below, you may initialize any attribute using standard constructor-argument initialization.</dt>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">address</span> <span class="o">=</span> <span class="n">Address</span><span class="p">(</span><span class="n">city</span><span class="o">=</span><span class="s1">&#39;Seattle&#39;</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s1">&#39;WA&#39;</span><span class="p">,</span> <span class="nb">zip</span><span class="o">=</span><span class="s1">&#39;98112&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="n">prediction</span> <span class="o">=</span> <span class="n">Prediction</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<span class="target" id="module-riverrunner.context"></span><p>Module for mapping the ORM context to Python classes.</p>
+<dl class="docutils">
+<dt>Classes:</dt>
+<dd><dl class="first docutils">
+<dt>Context: generates a database engine and contains a mangaged database connection through the Session object.</dt>
+<dd><p class="first">A connection string must be provided and in the following format:</p>
+<dl class="docutils">
+<dt>DATABASE = {</dt>
+<dd>‘drivername’: ‘postgres’,
+‘host’: &lt;host name or ip&gt;,
+‘port’: ‘5432’,
+‘username’: &lt;db username&gt;’,
+‘password’: &lt;db password&gt;,
+‘database’: &lt;db name&gt;</dd>
+</dl>
+<p>}</p>
+<p class="last">Any table not present or not matching the definitions below will be created or updated during
+context initialization.</p>
+</dd>
+</dl>
+<p class="last">ORM Classes: map objects their respective type to their associated database tables. See the design
+specification for more detailed information. Mapped objects defined below are: Address, Measurement,
+Metric, Prediction, RiverRun, State, Station, StationRiverDistance, and TmpMeasurement.</p>
+</dd>
+</dl>
+<dl class="class">
+<dt id="riverrunner.context.Address">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">Address</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#Address"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.Address" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for addresses</p>
+<dl class="attribute">
+<dt id="riverrunner.context.Address.address">
+<code class="descname">address</code><a class="headerlink" href="#riverrunner.context.Address.address" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – street address limited to 255 characters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Address.city">
+<code class="descname">city</code><a class="headerlink" href="#riverrunner.context.Address.city" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – city name limited to 255 characters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Address.county">
+<code class="descname">county</code><a class="headerlink" href="#riverrunner.context.Address.county" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – county name limited to 255 characters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Address.latitude">
+<code class="descname">latitude</code><a class="headerlink" href="#riverrunner.context.Address.latitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – geographical latitude in decimal date format (DD)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Address.longitude">
+<code class="descname">longitude</code><a class="headerlink" href="#riverrunner.context.Address.longitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – geographical longit ude in decimal date format (DD)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Address.state">
+<code class="descname">state</code><a class="headerlink" href="#riverrunner.context.Address.state" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – two character state identifier</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Address.zip">
+<code class="descname">zip</code><a class="headerlink" href="#riverrunner.context.Address.zip" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – zip code limited to 10 characters</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.Measurement">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">Measurement</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#Measurement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.Measurement" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for measurements</p>
+<dl class="attribute">
+<dt id="riverrunner.context.Measurement.date_time">
+<code class="descname">date_time</code><a class="headerlink" href="#riverrunner.context.Measurement.date_time" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>DateTime</em> – timestamp for when the measurement was taken</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Measurement.metric_id">
+<code class="descname">metric_id</code><a class="headerlink" href="#riverrunner.context.Measurement.metric_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – reference to the metric gathered</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Measurement.station_id">
+<code class="descname">station_id</code><a class="headerlink" href="#riverrunner.context.Measurement.station_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – reference to the weather station that gathered the measurement</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Measurement.value">
+<code class="descname">value</code><a class="headerlink" href="#riverrunner.context.Measurement.value" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – the value recorded</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Measurement.dict">
+<code class="descname">dict</code><a class="headerlink" href="#riverrunner.context.Measurement.dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>dictionary representation of the measurement</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.Metric">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">Metric</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#Metric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.Metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for metrics</p>
+<dl class="attribute">
+<dt id="riverrunner.context.Metric.metric_id">
+<code class="descname">metric_id</code><a class="headerlink" href="#riverrunner.context.Metric.metric_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – metric id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Metric.description">
+<code class="descname">description</code><a class="headerlink" href="#riverrunner.context.Metric.description" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – a short description of the metric</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Metric.units">
+<code class="descname">units</code><a class="headerlink" href="#riverrunner.context.Metric.units" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – units the metric is gathered in</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.Prediction">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">Prediction</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#Prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.Prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for predictions</p>
+<dl class="attribute">
+<dt id="riverrunner.context.Prediction.run_id">
+<code class="descname">run_id</code><a class="headerlink" href="#riverrunner.context.Prediction.run_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – reference to the river run this prediction is referencing</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Prediction.timestamp">
+<code class="descname">timestamp</code><a class="headerlink" href="#riverrunner.context.Prediction.timestamp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>DateTime</em> – timestamp for the prediction</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Prediction.fr_lb">
+<code class="descname">fr_lb</code><a class="headerlink" href="#riverrunner.context.Prediction.fr_lb" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – the lower bound of a confidence interval surrounding the prediction</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Prediction.fr">
+<code class="descname">fr</code><a class="headerlink" href="#riverrunner.context.Prediction.fr" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – the predicted flow rate</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Prediction.fr_ub">
+<code class="descname">fr_ub</code><a class="headerlink" href="#riverrunner.context.Prediction.fr_ub" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – the upper bound of a confidence interval surrounding the prediction</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.RiverRun">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">RiverRun</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#RiverRun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.RiverRun" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for a river run</p>
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.run_id">
+<code class="descname">run_id</code><a class="headerlink" href="#riverrunner.context.RiverRun.run_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.class_rating">
+<code class="descname">class_rating</code><a class="headerlink" href="#riverrunner.context.RiverRun.class_rating" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – the run’s white-water class rating</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.distance">
+<code class="descname">distance</code><a class="headerlink" href="#riverrunner.context.RiverRun.distance" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – the physical length of the run in miles</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.max_level">
+<code class="descname">max_level</code><a class="headerlink" href="#riverrunner.context.RiverRun.max_level" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – maximum recommended flow rate</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.min_level">
+<code class="descname">min_level</code><a class="headerlink" href="#riverrunner.context.RiverRun.min_level" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – minimum recommended flow rate</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.put_in_latitude">
+<code class="descname">put_in_latitude</code><a class="headerlink" href="#riverrunner.context.RiverRun.put_in_latitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – geographical latitude in decimal degree format (DD) representing where the run begins</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.put_in_longitude">
+<code class="descname">put_in_longitude</code><a class="headerlink" href="#riverrunner.context.RiverRun.put_in_longitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – geographical longitude (DD) representing where the run begins</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.river_name">
+<code class="descname">river_name</code><a class="headerlink" href="#riverrunner.context.RiverRun.river_name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – the name of the river</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.run_name">
+<code class="descname">run_name</code><a class="headerlink" href="#riverrunner.context.RiverRun.run_name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – the name of the run</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.take_out_latitude">
+<code class="descname">take_out_latitude</code><a class="headerlink" href="#riverrunner.context.RiverRun.take_out_latitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float) geographical latitude (DD</em></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.take_out_longitude">
+<code class="descname">take_out_longitude</code><a class="headerlink" href="#riverrunner.context.RiverRun.take_out_longitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float) geographical longitdue (DD</em></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.RiverRun.dict">
+<code class="descname">dict</code><a class="headerlink" href="#riverrunner.context.RiverRun.dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>dictionary representation of the river run</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.State">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">State</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#State"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.State" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for a state</p>
+<dl class="attribute">
+<dt id="riverrunner.context.State.short_name">
+<code class="descname">short_name</code><a class="headerlink" href="#riverrunner.context.State.short_name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – two letter state identification</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.State.long_name">
+<code class="descname">long_name</code><a class="headerlink" href="#riverrunner.context.State.long_name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – full state name</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.Station">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">Station</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#Station"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.Station" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for a weather station</p>
+<dl class="attribute">
+<dt id="riverrunner.context.Station.station_id">
+<code class="descname">station_id</code><a class="headerlink" href="#riverrunner.context.Station.station_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>string</em> – id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Station.source">
+<code class="descname">source</code><a class="headerlink" href="#riverrunner.context.Station.source" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>string</em> – the weather station’s controlling authority {USGS, NOAA}</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Station.name">
+<code class="descname">name</code><a class="headerlink" href="#riverrunner.context.Station.name" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>string</em> – name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Station.latitude">
+<code class="descname">latitude</code><a class="headerlink" href="#riverrunner.context.Station.latitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – geographical latitude (DD)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.Station.longitude">
+<code class="descname">longitude</code><a class="headerlink" href="#riverrunner.context.Station.longitude" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – geographical longitude (DD)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.StationRiverDistance">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">StationRiverDistance</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#StationRiverDistance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.StationRiverDistance" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping describing distances between runs and stations</p>
+<dl class="attribute">
+<dt id="riverrunner.context.StationRiverDistance.station_id">
+<code class="descname">station_id</code><a class="headerlink" href="#riverrunner.context.StationRiverDistance.station_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – weather station id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.StationRiverDistance.run_id">
+<code class="descname">run_id</code><a class="headerlink" href="#riverrunner.context.StationRiverDistance.run_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – river run id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.StationRiverDistance.put_in_distance">
+<code class="descname">put_in_distance</code><a class="headerlink" href="#riverrunner.context.StationRiverDistance.put_in_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – distance in miles from put-in to station</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.StationRiverDistance.take_out_distance">
+<code class="descname">take_out_distance</code><a class="headerlink" href="#riverrunner.context.StationRiverDistance.take_out_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – distance in miles from take out-to station</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.StationRiverDistance.source">
+<code class="descname">source</code><a class="headerlink" href="#riverrunner.context.StationRiverDistance.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>weather station source</p>
+<p>This property is not stored in the backend. It is eager-loaded using a
+join on Station when StationRiverDistance objects are returned from the
+database</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="riverrunner.context.TmpMeasurement">
+<em class="property">class </em><code class="descclassname">riverrunner.context.</code><code class="descname">TmpMeasurement</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/context.html#TmpMeasurement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.context.TmpMeasurement" title="Permalink to this definition">¶</a></dt>
+<dd><p>ORM mapping for temporary measurements</p>
+<dl class="attribute">
+<dt id="riverrunner.context.TmpMeasurement.date_time">
+<code class="descname">date_time</code><a class="headerlink" href="#riverrunner.context.TmpMeasurement.date_time" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>DateTime</em> – timestamp for when the measurement was taken</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.TmpMeasurement.metric_id">
+<code class="descname">metric_id</code><a class="headerlink" href="#riverrunner.context.TmpMeasurement.metric_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – reference to the metric gathered</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.TmpMeasurement.station_id">
+<code class="descname">station_id</code><a class="headerlink" href="#riverrunner.context.TmpMeasurement.station_id" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – reference to the weather station that gathered the measurement</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="riverrunner.context.TmpMeasurement.value">
+<code class="descname">value</code><a class="headerlink" href="#riverrunner.context.TmpMeasurement.value" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – the value recorded</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../repository/index.html" class="btn btn-neutral float-right" title="Repository" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../design_specification/design_specification.html" class="btn btn-neutral" title="Design Specification" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

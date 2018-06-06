@@ -1,0 +1,560 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>riverrunner.continuous_retrieval &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>riverrunner.continuous_retrieval</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for riverrunner.continuous_retrieval</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; script that scrapes and uploads DarkSky and USGS data</span>
+
+<span class="sd">Examples:</span>
+<span class="sd">    python continuous_retrieval.py [--csv] --manual start-date end-date</span>
+
+<span class="sd">    * scrapes and uploads data over the specified date range (inclusive)</span>
+<span class="sd">    * start-date and end-date must be in ISO format, &#39;YYYY-MM-DD&#39;</span>
+<span class="sd">    * optional argument to insert records into database from CSV file (for USGS data only)</span>
+
+<span class="sd">    python continuous_retrieval.py [--csv] --daily [days-back]</span>
+
+<span class="sd">    * scrapes and uploads data over date range</span>
+<span class="sd">    * date range is from days-back before yesterday to yesterday (inclusive)</span>
+<span class="sd">    * optional days-back parameter must be an integer (defaults to 0)</span>
+<span class="sd">    * optional argument to insert records into database from CSV file (for USGS data only)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span> <span class="k">as</span> <span class="nn">dt</span>
+<span class="kn">import</span> <span class="nn">dateutil</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">riverrunner</span> <span class="k">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">riverrunner.context</span> <span class="k">import</span> <span class="n">Context</span><span class="p">,</span> <span class="n">Measurement</span>
+<span class="kn">from</span> <span class="nn">riverrunner.repository</span> <span class="k">import</span> <span class="n">Repository</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.exc</span> <span class="k">import</span> <span class="n">SQLAlchemyError</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+
+<span class="c1"># data directory</span>
+<span class="n">DATA_DIR</span> <span class="o">=</span> <span class="s2">&quot;data/&quot;</span>
+
+<span class="c1"># base API URLs</span>
+<span class="n">DARK_SKY_URL</span> <span class="o">=</span> <span class="s1">&#39;https://api.darksky.net/forecast&#39;</span>
+<span class="n">USGS_BASE_URL</span> <span class="o">=</span> <span class="s2">&quot;https://waterservices.usgs.gov/nwis/iv/&quot;</span>
+
+<span class="c1"># USGS query constants</span>
+<span class="n">USGS_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;json&quot;</span>
+<span class="n">USGS_SITE_STATUS</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+
+<span class="c1"># USGS parameter codes</span>
+<span class="n">PARAM_CODES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;00060&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="fill_noaa_gaps"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.fill_noaa_gaps">[docs]</a><span class="k">def</span> <span class="nf">fill_noaa_gaps</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;use as needed to fill gaps in weather measurements</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        start_date: the start day, included in API calls</span>
+<span class="sd">        end_date: the end day, inclusive</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">Context</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">DATABASE</span><span class="p">)</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">stations</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">get_all_stations</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;NOAA&#39;</span><span class="p">)</span>
+
+    <span class="c1"># loop through each day retrieving observations</span>
+    <span class="k">while</span> <span class="n">start_date</span> <span class="o">&lt;=</span> <span class="n">end_date</span><span class="p">:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">stations</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">station</span><span class="p">:</span> <span class="n">make_station_observation_request</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">start_date</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()),</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="c1"># put them all in the db</span>
+        <span class="n">added</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">station_measurements</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">repo</span><span class="o">.</span><span class="n">put_measurements_from_list</span><span class="p">(</span><span class="n">station_measurements</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">SQLAlchemyError</span><span class="p">:</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+                <span class="k">continue</span>
+            <span class="n">added</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">station_measurements</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;added </span><span class="si">{added}</span><span class="s1"> - {start_date.isoformat()}&#39;</span><span class="p">)</span>
+        <span class="n">start_date</span> <span class="o">+=</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_noaa_predictions"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.get_noaa_predictions">[docs]</a><span class="k">def</span> <span class="nf">get_noaa_predictions</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;retrieve NOAA predictions for run</span>
+
+<span class="sd">    Args</span>
+<span class="sd">        run_id (int): run</span>
+<span class="sd">        session (Session): database session</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">        DataFrame: containing predictions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">put_in_latitude</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">put_in_longitude</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;https://api.weather.gov/points/</span><span class="si">{lat}</span><span class="s1">,</span><span class="si">{lon}</span><span class="s1">/forecast/hourly&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;periods&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="get_usgs_site_ids"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.get_usgs_site_ids">[docs]</a><span class="k">def</span> <span class="nf">get_usgs_site_ids</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; retrieve USGS site ids from database</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [str]: list of site ids</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span>
+    <span class="n">sites</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">get_all_stations</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;USGS&quot;</span><span class="p">)</span>
+    <span class="n">site_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sites</span><span class="p">[</span><span class="s2">&quot;station_id&quot;</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">site_ids</span></div>
+
+
+<div class="viewcode-block" id="get_usgs_json_data"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.get_usgs_json_data">[docs]</a><span class="k">def</span> <span class="nf">get_usgs_json_data</span><span class="p">(</span><span class="n">site_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">param_code</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; retrieve JSON data for a specific USGS site, parameter, and date range</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        site_id (str): string representation of site id</span>
+<span class="sd">        start_date (str): start date in ISO format, &#39;YYYY-MM-DD&#39;</span>
+<span class="sd">        end_date (str): end date in ISO format, &#39;YYYY-MM-DD&#39;</span>
+<span class="sd">        param_code (str): string representation of parameter code</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict[str, str]: map relating timestamps to values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="n">USGS_FORMAT</span><span class="p">,</span>
+        <span class="s2">&quot;sites&quot;</span><span class="p">:</span> <span class="n">site_id</span><span class="p">,</span>
+        <span class="s2">&quot;startDT&quot;</span><span class="p">:</span> <span class="n">start_date</span><span class="p">,</span>
+        <span class="s2">&quot;endDT&quot;</span><span class="p">:</span> <span class="n">end_date</span><span class="p">,</span>
+        <span class="s2">&quot;parameterCd&quot;</span><span class="p">:</span> <span class="n">param_code</span><span class="p">,</span>
+        <span class="s2">&quot;siteStatus&quot;</span><span class="p">:</span> <span class="n">USGS_SITE_STATUS</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">USGS_BASE_URL</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response_json</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">raise</span>
+    <span class="c1"># response_json = requests.get(USGS_BASE_URL, params=params).json()</span>
+    <span class="n">time_series_list</span> <span class="o">=</span> <span class="n">response_json</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">][</span><span class="s2">&quot;timeSeries&quot;</span><span class="p">]</span>
+    <span class="n">values_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_series_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">values_list</span> <span class="o">=</span> <span class="n">time_series_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;values&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+    <span class="n">date_value_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">elem</span><span class="p">[</span><span class="s2">&quot;dateTime&quot;</span><span class="p">]:</span> <span class="n">elem</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">values_list</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">date_value_map</span></div>
+
+
+<div class="viewcode-block" id="make_station_observation_request"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.make_station_observation_request">[docs]</a><span class="k">def</span> <span class="nf">make_station_observation_request</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">day</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;make a request for observations to the DarkSky API</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        station: (Station) weather station to retrieve measurments</span>
+<span class="sd">        day: (str) datetime in iso format</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        [Measurements] if call was successful</span>
+<span class="sd">        None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{DARK_SKY_URL}</span><span class="s1">/</span><span class="si">{settings.DARK_SKY_KEY}</span><span class="s1">/</span><span class="si">{station.latitude}</span><span class="s1">,</span><span class="si">{station.longitude}</span><span class="s1">,</span><span class="si">{day}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># make sure the web result is valid</span>
+    <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="n">measurements</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># generate hourly measurements</span>
+        <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">content</span><span class="p">[</span><span class="s1">&#39;hourly&#39;</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+
+            <span class="c1"># add precip</span>
+            <span class="n">measurements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Measurement</span><span class="p">(</span>
+                    <span class="n">station_id</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span>
+                    <span class="n">metric_id</span><span class="o">=</span><span class="s1">&#39;00003&#39;</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;precipIntensity&#39;</span><span class="p">],</span>
+                    <span class="n">date_time</span><span class="o">=</span><span class="n">timestamp</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># add temp</span>
+            <span class="n">measurements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Measurement</span><span class="p">(</span>
+                    <span class="n">station_id</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span>
+                    <span class="n">metric_id</span><span class="o">=</span><span class="s1">&#39;00001&#39;</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">],</span>
+                    <span class="n">date_time</span><span class="o">=</span><span class="n">timestamp</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># add humidity</span>
+            <span class="n">measurements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Measurement</span><span class="p">(</span>
+                    <span class="n">station_id</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">station_id</span><span class="p">,</span>
+                    <span class="n">metric_id</span><span class="o">=</span><span class="s1">&#39;00002&#39;</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;humidity&#39;</span><span class="p">],</span>
+                    <span class="n">date_time</span><span class="o">=</span><span class="n">timestamp</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{now}</span><span class="s1">: </span><span class="si">{station.station_id}</span><span class="s1"> complete&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">measurements</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{now}</span><span class="s1">: </span><span class="si">{station.station_id}</span><span class="s1"> failed&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="put_24hr_observations"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.put_24hr_observations">[docs]</a><span class="k">def</span> <span class="nf">put_24hr_observations</span><span class="p">(</span><span class="n">session</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;get yesterdays observations</span>
+
+<span class="sd">    Args</span>
+<span class="sd">        session (Session): database session</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># create a repo and pull all the weather stations from NOAA</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">stations</span> <span class="o">=</span> <span class="n">repo</span><span class="o">.</span><span class="n">get_all_stations</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;NOAA&#39;</span><span class="p">)</span>
+
+    <span class="c1"># setup the day to retrieve</span>
+    <span class="n">yesterday</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+    <span class="n">yesterday</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">yesterday</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">yesterday</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="n">yesterday</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+
+    <span class="c1"># apply the api request to each station</span>
+    <span class="n">content</span> <span class="o">=</span> <span class="n">stations</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">station</span><span class="p">:</span> <span class="n">make_station_observation_request</span><span class="p">(</span><span class="n">station</span><span class="p">,</span> <span class="n">yesterday</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="c1"># put them all in the db</span>
+    <span class="n">added</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">station_measurements</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+        <span class="n">repo</span><span class="o">.</span><span class="n">put_measurements_from_list</span><span class="p">(</span><span class="n">station_measurements</span><span class="p">)</span>
+        <span class="n">added</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">station_measurements</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">added</span></div>
+
+
+<div class="viewcode-block" id="scrape_usgs_data"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.scrape_usgs_data">[docs]</a><span class="k">def</span> <span class="nf">scrape_usgs_data</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; scrape data for all USGS sites and parameters, over the specified date range</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        start_date (str): start date in ISO format, &#39;YYYY-MM-DD&#39;</span>
+<span class="sd">        end_date (str): end date in ISO format, &#39;YYYY-MM-DD&#39;</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [str]: list of full paths of CSV files that were written to</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start_date_file_ext</span> <span class="o">=</span> <span class="n">start_date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">end_date_file_ext</span> <span class="o">=</span> <span class="n">end_date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">site_ids</span> <span class="o">=</span> <span class="n">get_usgs_site_ids</span><span class="p">()</span>
+    <span class="n">param_codes</span> <span class="o">=</span> <span class="n">PARAM_CODES</span>
+    <span class="n">out_files</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">param_code</span> <span class="ow">in</span> <span class="n">param_codes</span><span class="p">:</span>
+        <span class="n">total_values</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">out_file</span> <span class="o">=</span> <span class="n">DATA_DIR</span> <span class="o">+</span> <span class="s2">&quot;measurements_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">.csv&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">param_code</span><span class="p">,</span>
+            <span class="n">start_date_file_ext</span><span class="p">,</span>
+            <span class="n">end_date_file_ext</span>
+        <span class="p">)</span>
+        <span class="n">out_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out_file</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">site_id</span> <span class="ow">in</span> <span class="n">site_ids</span><span class="p">:</span>
+                <span class="n">json_data</span> <span class="o">=</span> <span class="n">get_usgs_json_data</span><span class="p">(</span>
+                    <span class="n">site_id</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span>
+                    <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span>
+                    <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span>
+                    <span class="n">param_code</span><span class="o">=</span><span class="n">param_code</span>
+                <span class="p">)</span>
+                <span class="n">total_values</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">date_time</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">json_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">site_id</span><span class="p">,</span>
+                        <span class="n">param_code</span><span class="p">,</span>
+                        <span class="n">date_time</span><span class="p">,</span>
+                        <span class="n">value</span>
+                    <span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_code</span><span class="p">,</span> <span class="n">total_values</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out_files</span></div>
+
+
+<div class="viewcode-block" id="upload_data_from_file"><a class="viewcode-back" href="../../continuous_retrieval/index.html#riverrunner.continuous_retrieval.upload_data_from_file">[docs]</a><span class="k">def</span> <span class="nf">upload_data_from_file</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="n">from_csv</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; insert all records contained in file to database</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        csv_file (str): full path of CSV file containing records</span>
+<span class="sd">        from_csv (bool): whether to insert into database using CSV or ORM (CSV scales better)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: success/exception</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">from_csv</span><span class="p">:</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">put_measurements_from_csv</span><span class="p">(</span><span class="n">csv_file</span><span class="o">=</span><span class="n">csv_file</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">measurements</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">csv_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">site_id</span><span class="p">,</span> <span class="n">param_code</span><span class="p">,</span> <span class="n">date_time</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="n">measurement</span> <span class="o">=</span> <span class="n">Measurement</span><span class="p">(</span>
+                    <span class="n">station_id</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span>
+                    <span class="n">metric_id</span><span class="o">=</span><span class="n">param_code</span><span class="p">,</span>
+                    <span class="n">date_time</span><span class="o">=</span><span class="n">dateutil</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">date_time</span><span class="p">),</span>
+                    <span class="n">value</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">measurements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">measurement</span><span class="p">)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">put_measurements_from_list</span><span class="p">(</span><span class="n">measurements</span><span class="o">=</span><span class="n">measurements</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">success</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># python scrape_usgs_data.py [--csv] --manual start-date end-date</span>
+    <span class="c1"># python scrape_usgs_data.py [--csv] --daily [days-back]</span>
+
+    <span class="n">from_csv</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;--csv&quot;</span><span class="p">:</span>
+        <span class="n">from_csv</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="s2">&quot;--manual&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;--manual&quot;</span><span class="p">)</span>
+        <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="k">elif</span> <span class="s2">&quot;--daily&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;--daily&quot;</span><span class="p">)</span>
+        <span class="n">days_back</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">days_back</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">today</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">today</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">end_date</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">days_back</span><span class="p">)</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">end_date</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">start_date</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+
+    <span class="n">csv_files</span> <span class="o">=</span> <span class="n">scrape_usgs_data</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">csv_file</span> <span class="ow">in</span> <span class="n">csv_files</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;uploading </span><span class="si">{}</span><span class="s2">...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">csv_file</span><span class="p">))</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">upload_data_from_file</span><span class="p">(</span><span class="n">csv_file</span><span class="o">=</span><span class="n">csv_file</span><span class="p">,</span> <span class="n">from_csv</span><span class="o">=</span><span class="n">from_csv</span><span class="p">)</span>
+
+    <span class="n">fill_noaa_gaps</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

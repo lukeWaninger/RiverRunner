@@ -1,0 +1,406 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Repository &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Continous Data Retrieval" href="../continuous_retrieval/index.html" />
+    <link rel="prev" title="Data Abstraction" href="../data_abstraction/index.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Repository</a><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Repository</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/repository/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="repository">
+<h1>Repository<a class="headerlink" href="#repository" title="Permalink to this headline">¶</a></h1>
+<p>The repository class acts as the single interface between the application and data layers. It should be used for all
+database transactions.</p>
+<div class="toctree-wrapper compound">
+</div>
+<span class="target" id="module-riverrunner.repository"></span><p>module defining the class Repository</p>
+<p>The repository class represents an abstraction for the user to interface with the backend. It provides
+standard CRUD operations as defined below.</p>
+<dl class="class">
+<dt id="riverrunner.repository.Repository">
+<em class="property">class </em><code class="descclassname">riverrunner.repository.</code><code class="descname">Repository</code><span class="sig-paren">(</span><em>session=None</em>, <em>connection=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository" title="Permalink to this definition">¶</a></dt>
+<dd><p>interface between application and backend</p>
+<dl class="method">
+<dt id="riverrunner.repository.Repository.clear_predictions">
+<code class="descname">clear_predictions</code><span class="sig-paren">(</span><em>run_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.clear_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.clear_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete all existing predictions from database</p>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>None</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.get_all_runs">
+<code class="descname">get_all_runs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.get_all_runs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.get_all_runs" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve all runs from db</p>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>DataFrame: containing all runs</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.get_all_runs_as_list">
+<code class="descname">get_all_runs_as_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.get_all_runs_as_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.get_all_runs_as_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns all runs as select list</p>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>[{‘label’, ‘value’}]: list of select options for drop down</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.get_all_stations">
+<code class="descname">get_all_stations</code><span class="sig-paren">(</span><em>source=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.get_all_stations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.get_all_stations" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve all weather stations from db</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">containing all weather stations</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">DataFrame</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.get_measurements">
+<code class="descname">get_measurements</code><span class="sig-paren">(</span><em>run_id</em>, <em>start_date=None</em>, <em>end_date=None</em>, <em>min_distance=0.0</em>, <em>metric_ids=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.get_measurements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.get_measurements" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a set of measurements from the db</p>
+<ul class="simple">
+<li>not supplying a start and end date will return measurements covering the previous 30 days. add a start date to retrieve older</li>
+<li>supplying a start date without and end date will pull all measurements up to the current day</li>
+<li>if no min distance (or a negative distance) is provided the method will return measurements associated with the closest weather station from each unique source</li>
+<li>supplying a distance will NOT guarantee both NOAA and USGS stations are retrieved</li>
+<li>supplying an end date without a start will raise an exception</li>
+<li>supplying an end date earlier than the start will raise an exception</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>run_id</strong> (<em>int</em>) – retrieve measurements associated with a specific run</li>
+<li><strong>start_date</strong> (<em>DateTime</em>) – beginning of date range for which to retrieve measurements. if None is</li>
+<li><strong>supplied the function will default to retrieving the past thirty days</strong></li>
+<li><strong>end_date</strong> (<em>DateTime</em>) – end of date range for which to retrieve measurements</li>
+<li><strong>min_distance</strong> (<em>float</em>) – distance from run for which to retrieve measurements</li>
+<li><strong>metric_ids</strong> (<em>[str]</em>) – list of metric ids to filter</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">containing measurements within the given set of parameters</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">DataFrame</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – if start date is later than end date</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – if start date is is later than current date</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – if end date is supplied without a starting date</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.get_run">
+<code class="descname">get_run</code><span class="sig-paren">(</span><em>run_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.get_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.get_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve a single run</p>
+<dl class="docutils">
+<dt>Args</dt>
+<dd>run_id (int): run id</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.put_measurements_from_csv">
+<code class="descname">put_measurements_from_csv</code><span class="sig-paren">(</span><em>csv_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.put_measurements_from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.put_measurements_from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>add a file of measurements</p>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li>will overwrite previous values with same primary key</li>
+<li>connection will rollback transaction if commit fails</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>csv_file</strong> (<em>file</em>) – name of file containing records to insert</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">success/exception</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – if error occurs while connected to database</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.put_measurements_from_list">
+<code class="descname">put_measurements_from_list</code><span class="sig-paren">(</span><em>measurements</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.put_measurements_from_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.put_measurements_from_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>add a list of measurements to the database</p>
+<dl class="docutils">
+<dt>Args</dt>
+<dd>measurements [Measurement]: list of measurements to put in the db</dd>
+<dt>Returns</dt>
+<dd>None</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.put_predictions">
+<code class="descname">put_predictions</code><span class="sig-paren">(</span><em>predictions</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.put_predictions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.put_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>add a set of predictions</p>
+<dl class="docutils">
+<dt>Args</dt>
+<dd>predictions ([Prediction]): set of predictions to insert</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="riverrunner.repository.Repository.put_station_river_distances">
+<code class="descname">put_station_river_distances</code><span class="sig-paren">(</span><em>strd</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/riverrunner/repository.html#Repository.put_station_river_distances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#riverrunner.repository.Repository.put_station_river_distances" title="Permalink to this definition">¶</a></dt>
+<dd><p>put station river distance objects in the db</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>strd</strong> (<em>[StationRiverDistance]</em>) – list of StationRiverDistances to add</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../continuous_retrieval/index.html" class="btn btn-neutral float-right" title="Continous Data Retrieval" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../data_abstraction/index.html" class="btn btn-neutral" title="Data Abstraction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

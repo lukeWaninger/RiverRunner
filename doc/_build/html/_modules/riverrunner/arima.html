@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>riverrunner.arima &mdash; River Runner 0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> River Runner
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                latest
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../functional_specification/functional_specification.html">Functional Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../design_specification/design_specification.html">Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_abstraction/index.html">Data Abstraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../repository/index.html">Repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../continuous_retrieval/index.html">Continous Data Retrieval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prediction/index.html">Flow Rate Predictions</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">River Runner</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>riverrunner.arima</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for riverrunner.arima</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for ARIMA modeling.</span>
+
+<span class="sd">Classes:</span>
+<span class="sd">    Arima: contains functions to retrieve data and build ARIMA model</span>
+<span class="sd">    for given river run</span>
+<span class="sd">        Functions:</span>
+<span class="sd">            get_data: retrieves needed data for selected run</span>
+
+<span class="sd">            daily_avg: takes time series with measurements on different</span>
+<span class="sd">            timeframes and creates a dataframe with daily averages for</span>
+<span class="sd">            flow rate and exogenous predictors</span>
+
+<span class="sd">            arima_model: creates flow rate predictions using statsmodel</span>
+<span class="sd">            package functions</span>
+
+<span class="sd">            get_min_max: use get_all_runs function to query database and</span>
+<span class="sd">            then pull min and max runnable flow rate for given run</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.arima_model</span> <span class="k">import</span> <span class="n">ARIMA</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="k">import</span> <span class="n">arma_order_select_ic</span>
+<span class="kn">from</span> <span class="nn">riverrunner.repository</span> <span class="k">import</span> <span class="n">Repository</span>
+
+
+<div class="viewcode-block" id="Arima"><a class="viewcode-back" href="../../prediction/index.html#riverrunner.arima.Arima">[docs]</a><span class="k">class</span> <span class="nc">Arima</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates predictions for future flow rate using ARIMA model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Arima.get_data"><a class="viewcode-back" href="../../prediction/index.html#riverrunner.arima.Arima.get_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="n">metric_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves data for selected run from database for past four years</span>
+<span class="sd">        from current date using Repository.get_measurements function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_id (int): id of run for which model will be created</span>
+<span class="sd">            metric_ids ([str]) - optional: list of metric ids to include</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame: containing four years of measurements up to current</span>
+<span class="sd">            date for the given run</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">now</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">month</span><span class="p">,</span> <span class="n">now</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">4</span><span class="o">*</span><span class="mi">365</span><span class="p">)</span>
+        <span class="n">test_measures</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">get_measurements</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+                                                   <span class="n">start_date</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                                                   <span class="n">end_date</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+                                                   <span class="n">metric_ids</span><span class="o">=</span><span class="n">metric_ids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">test_measures</span></div>
+
+<div class="viewcode-block" id="Arima.daily_avg"><a class="viewcode-back" href="../../prediction/index.html#riverrunner.arima.Arima.daily_avg">[docs]</a>    <span class="k">def</span> <span class="nf">daily_avg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates dataframe needed for modelling</span>
+
+<span class="sd">        Calls Arima.get_data to retrieve measurements for given run and</span>
+<span class="sd">        creates a dataframe with daily averages for flow rate and exogenous</span>
+<span class="sd">        predictors.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_id (int): id of run for which model will be created</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame: containing daily measurements</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">time_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+                                    <span class="n">metric_ids</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;00003&#39;</span><span class="p">,</span> <span class="s1">&#39;00060&#39;</span><span class="p">,</span> <span class="s1">&#39;00001&#39;</span><span class="p">])</span>
+
+        <span class="n">precip</span> <span class="o">=</span> <span class="n">time_series</span><span class="p">[</span><span class="n">time_series</span><span class="o">.</span><span class="n">metric_id</span> <span class="o">==</span> <span class="s1">&#39;00003&#39;</span><span class="p">]</span>
+        <span class="n">precip</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">precip</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">precip</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">precip</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">]</span>
+        <span class="n">precip_daily</span> <span class="o">=</span> <span class="n">precip</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">&#39;D&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="n">flow</span> <span class="o">=</span> <span class="n">time_series</span><span class="p">[</span><span class="n">time_series</span><span class="o">.</span><span class="n">metric_id</span> <span class="o">==</span> <span class="s1">&#39;00060&#39;</span><span class="p">]</span>
+        <span class="n">flow</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">flow</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">flow</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">flow</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">]</span>
+        <span class="n">flow_daily</span> <span class="o">=</span> <span class="n">flow</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">&#39;D&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">time_series</span><span class="p">[</span><span class="n">time_series</span><span class="o">.</span><span class="n">metric_id</span> <span class="o">==</span> <span class="s1">&#39;00001&#39;</span><span class="p">]</span>
+        <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">],</span> <span class="n">utc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">temp</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">temp</span><span class="p">[</span><span class="s1">&#39;date_time&#39;</span><span class="p">]</span>
+        <span class="n">temp_daily</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">&#39;D&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="n">time_series_daily</span> <span class="o">=</span> <span class="n">temp_daily</span>\
+            <span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">flow_daily</span><span class="p">,</span>
+                   <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span>
+                   <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">precip_daily</span><span class="p">,</span>
+                   <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span>
+                   <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">time_series_daily</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">,</span> <span class="s1">&#39;flow&#39;</span><span class="p">,</span> <span class="s1">&#39;precip&#39;</span><span class="p">]</span>
+        <span class="n">time_series_daily</span> <span class="o">=</span> <span class="n">time_series_daily</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">time_series_daily</span></div>
+
+<div class="viewcode-block" id="Arima.arima_model"><a class="viewcode-back" href="../../prediction/index.html#riverrunner.arima.Arima.arima_model">[docs]</a>    <span class="k">def</span> <span class="nf">arima_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates flow rate predictions using ARIMA model.</span>
+
+<span class="sd">        Calls Arima.daily_avg to retrieve data for given run, then creates</span>
+<span class="sd">        flow rate predictions by using statsmodels functions</span>
+<span class="sd">        arma_order_select_ic and ARIMA. Three weeks of past flow rate data</span>
+<span class="sd">        are also returned for plotting purposes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_id (int): id of run for which model will be created</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame: containing time-series flow rate predictions for next</span>
+<span class="sd">            7 days and historical flow rate for past 21 days</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Retrieve data for modelling</span>
+        <span class="n">measures</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">daily_avg</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+
+        <span class="c1"># Take past 7-day average of exogenous predictors to use for</span>
+        <span class="c1"># future prediction</span>
+        <span class="n">exog_future_predictors</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">measures</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">7</span><span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">]</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span>
+            <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Find optimal order for model</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">arma_order_select_ic</span><span class="p">(</span><span class="n">measures</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">],</span> <span class="n">ic</span><span class="o">=</span><span class="s1">&#39;aic&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Build and fit model</span>
+                <span class="n">mod</span> <span class="o">=</span> <span class="n">ARIMA</span><span class="p">(</span><span class="n">measures</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">],</span>
+                            <span class="n">order</span><span class="o">=</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">aic_min_order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span>
+                                   <span class="n">params</span><span class="o">.</span><span class="n">aic_min_order</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                            <span class="n">exog</span><span class="o">=</span><span class="n">measures</span><span class="p">[[</span><span class="s1">&#39;temp&#39;</span><span class="p">,</span> <span class="s1">&#39;precip&#39;</span><span class="p">]])</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+
+                <span class="n">prediction</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+                                  <span class="n">exog</span><span class="o">=</span><span class="n">exog_future_predictors</span><span class="p">[</span>
+                                      <span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">,</span> <span class="s1">&#39;precip&#39;</span><span class="p">]],</span>
+                                  <span class="n">alpha</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span><span class="o">.</span><span class="n">T</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># If model doesn&#39;t converge, return &quot;prediction&quot;</span>
+                <span class="c1"># of most recent day</span>
+                <span class="n">prediction</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">measures</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">]</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span>
+                                       <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="c1"># If order fitting doesn&#39;t converge, return &quot;prediction&quot;</span>
+            <span class="c1"># of most recent day</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">measures</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="p">]</span><span class="o">*</span><span class="mi">7</span><span class="p">,</span>
+                                   <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s1">&#39;flow&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Add dates and return past 21 days for plotting</span>
+        <span class="n">prediction_dates</span> <span class="o">=</span> <span class="p">[</span><span class="n">measures</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span>
+                            <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">)]</span>
+        <span class="n">prediction</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">prediction_dates</span>
+        <span class="n">past</span> <span class="o">=</span> <span class="n">measures</span><span class="p">[</span><span class="s1">&#39;flow&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">22</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">past</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">prediction</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">prediction</span></div>
+
+<div class="viewcode-block" id="Arima.get_min_max"><a class="viewcode-back" href="../../prediction/index.html#riverrunner.arima.Arima.get_min_max">[docs]</a>    <span class="k">def</span> <span class="nf">get_min_max</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets min and max runnable flow rate for river run to use for plots</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_id: id of run for which model will be created</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            levels: minimum and maximum runnable flow rate for river</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">runs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">get_all_runs</span><span class="p">()</span>
+        <span class="n">levels</span> <span class="o">=</span> <span class="n">runs</span><span class="p">[[</span><span class="s1">&#39;min_level&#39;</span><span class="p">,</span> <span class="s1">&#39;max_level&#39;</span><span class="p">]][</span><span class="n">runs</span><span class="p">[</span><span class="s1">&#39;run_id&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">levels</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Ryan Bald, Kenten Danas, Luke Waninger.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'0',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
