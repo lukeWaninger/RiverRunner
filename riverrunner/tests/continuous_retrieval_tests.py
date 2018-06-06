@@ -1,30 +1,32 @@
 import datetime as dt
-import numpy as np
-import os
-import psycopg2
-from riverrunner import  settings
-from riverrunner.daily import *
-from riverrunner.repository import Repository
+from riverrunner.context import Address, Metric, RiverRun, Station
+from riverrunner.continuous_retrieval import *
 from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
 
 
-class TestDaily(TestCase):
+class TestRepository(TestCase):
+    """test class for continous noaa integration
+
+    Attributes:
+        context(TContext): mock database context
+        session (Session): managed connection to that context
+        repo(riverrunner.Repository):
+    """
+
     @classmethod
     def setUpClass(cls):
         """perform at test class initialization
 
-                Note:
-                    * ensure only a TContext is used NEVER Context or we'll lose all
-                    our hard-scraped data
-                    * any existing data in the mock db will be deleted
-                    * 5 random addresses are generated because nearly all unittests
-                    require addresses to exist as a foreign key dependency
-                """
+        Note:
+            * ensure only a TContext is used NEVER Context or we'll lose all
+            our hard-scraped data
+            * any existing data in the mock db will be deleted
+            * 5 random addresses are generated because nearly all unittests
+            require addresses to exist as a foreign key dependency
+        """
         cls.context = TContext()
         cls.session = cls.context.Session()
-        cls.connection = psycopg2.connect(**settings.PSYCOPG_DB_TEST)
-        cls.repo = Repository(session=cls.session, connection=cls.connection)
 
         cls.context.clear_dependency_data(cls.session)
         cls.context.generate_addresses(cls.session)
@@ -37,7 +39,6 @@ class TestDaily(TestCase):
         """
         cls.context.clear_dependency_data(cls.session)
         cls.session.close()
-        cls.connection.close()
 
     def setUp(self):
         """perform before each unittest"""
@@ -52,3 +53,72 @@ class TestDaily(TestCase):
         """
         self.context.clear_all_tables(self.session)
 
+    def test_get_noaa_predictions(self):
+        """test that predictions are returned"""
+        # setup
+        address = Address(
+            latitude=45.624,
+            longitude=-122.306
+        )
+
+        run = RiverRun(
+            run_id=1,
+            put_in_latitude=address.latitude,
+            put_in_longitude=address.longitude,
+            take_out_latitude=address.latitude,
+            take_out_longitude=address.longitude
+        )
+
+        self.session.add_all([address, run])
+        self.session.commit()
+
+        predictions = get_noaa_predictions(run.run_id, self.session)
+
+        # assert
+        self.assertIsInstance(predictions, pd.DataFrame)
+        self.assertTrue(len(predictions.columns) > 0)
+
+    def test_make_station_observation_request(self):
+        """test a request to NOAA for observations"""
+        a = self.session.query(Measurement).filter(
+            Measurement.date_time >= dt.datetime.now() - dt.timedelta(days=24)
+        ).all()
+
+        address1 = Address(
+            latitude=46.65,
+            longitude=-119.91
+        )
+        station1 = Station(
+            station_id='KAWO',
+            latitude=address1.latitude,
+            longitude=address1.longitude,
+            source='NOAA'
+        )
+
+        address2 = Address(
+            latitude=47.63333,
+            longitude=-117.65
+        )
+        station2 = Station(
+            station_id='KGEG',
+            latitude=address2.latitude,
+            longitude=address2.longitude,
+            source='NOAA'
+        )
+
+        self.session.add_all([
+            address1, address2,
+            station1, station2,
+            Metric(metric_id='00003'),
+            Metric(metric_id='00002'),
+            Metric(metric_id='00001')
+        ])
+        self.session.commit()
+
+        put_24hr_observations(self.session)
+
+        # assert
+        b = self.session.query(Measurement).filter(
+            Measurement.date_time >= dt.datetime.now() - dt.timedelta(days=24)
+        ).all()
+        self.assertTrue(len(b) > len(a))
