@@ -33,23 +33,23 @@ def log(message):
     print(message)
 
     now = dt.datetime.today()
-    with open(f'data/logs/{now.year}{now.month}{now.day}_log.txt', 'a+') as f:
+    with open(f'data/logs/{now.year}{now.month}{now.day}_log.txt', 'w+') as f:
         f.write(f'{dt.datetime.now().isoformat()}: {message}\n')
 
 
-def get_weather_observations(session, attempt=0):
+def get_weather_observations(session, attempt=0, retries=DARK_SKY_RETRIES):
     """input the past 24 hr observations and write to log
 
     Args:
         session: (Session) database connection
         attempt: (int) optional maximum retries for API call
-
+        retries: (int) optional number of API retries
     Returns:
         True: if observations were successfully retrieved and inserted
         False: otherwise
     """
     try:
-        if attempt >= DARK_SKY_RETRIES:
+        if attempt >= retries:
             return 1
         added = continuous_retrieval.put_24hr_observations(session)
 
@@ -78,6 +78,8 @@ def get_usgs_observations():
     for csv_file in csv_files:
         log("uploading {}...".format(csv_file))
         upload_data_from_file(csv_file=csv_file)
+
+    return True
 
 
 def compute_predictions(session):

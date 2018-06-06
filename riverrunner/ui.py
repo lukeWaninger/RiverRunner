@@ -12,10 +12,10 @@ from riverrunner.repository import Repository
 from riverrunner import settings
 
 """IP address for running application"""
-HOST_IP = '127.0.0.1'
+HOST_IP = '192.168.80.13'
 
 """enable for application debugging features"""
-DEBUG = True
+DEBUG = False
 
 """mapping from river's predicted status to a color codes"""
 COLOR_MAP = dict(
