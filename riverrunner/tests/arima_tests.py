@@ -4,6 +4,8 @@ Unit tests for arima module
 import unittest
 import numpy as np
 from riverrunner.arima import Arima
+from riverrunner.context import Context
+import riverrunner.settings as settings
 
 
 class TestArima(unittest.TestCase):
@@ -12,7 +14,11 @@ class TestArima(unittest.TestCase):
     Attributes:
         arima (riverrunner.Arima): class being tested
     """
-    arima = Arima()
+    @classmethod
+    def setUpClass(cls):
+        cls.context = Context(settings.DATABASE)
+        cls.session = cls.context.Session()
+        cls.arima = Arima(cls.session)
 
     def test_daily_avg_returns_correct_columns(self):
         """

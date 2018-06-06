@@ -1,8 +1,5 @@
-import datetime as dt
-import numpy as np
 import os
 import psycopg2
-from riverrunner import  settings
 from riverrunner.daily import *
 from riverrunner.repository import Repository
 from riverrunner.tests.tcontext import TContext
@@ -79,4 +76,50 @@ class TestDaily(TestCase):
         self.session.add_all([station, metric[0], metric[1], metric[2]])
 
         m = get_weather_observations(self.session)
+        self.assertTrue(m)
+
+    def test_get_weather_gracefully_exits(self):
+        station = self.context.get_stations_for_test(1, self.session)[0]
+        self.session.add(station)
+
+        m = get_weather_observations(session=self.session, retries=1, wait=0)
+        self.assertTrue(m)
+
+    def test_get_weather_gracefully_fails_for_anything(self):
+        m = get_weather_observations(self.session, attempt=[False, False], retries=1, wait=0)
+        self.assertTrue(not m)
+
+    def test_get_usgs_obs(self):
+        pass
+
+    def test_compute_predictions_no_runs_present(self):
+        m = compute_predictions(self.session)
+        self.assertTrue(m)
+
+    def test_compute_predictions_fails_one_run(self):
+        run = self.context.get_runs_for_test(1, self.session)[0]
+        self.session.add(run)
+
+        m = compute_predictions(self.session)
+        now = dt.datetime.today()
+        path = f'data/logs/{now.year}{now.month}{now.day}_log.txt'
+
+        with open(path) as f:
+            line = f.readline()
+
+        self.assertTrue(not (line.find('failed') > 0))
+
+    def test_compute_predictions_for_one_run(self):
+        run = self.context.get_runs_for_test(1, self.session)[0]
+        station = self.context.get_stations_for_test(1, self.session)[0]
+        metrics = self.context.get_metrics_for_test(3)
+        metrics[0].metric_id = '00003'
+        metrics[1].metric_id = '00001'
+        metrics[2].metric_id = '00060'
+
+        self.session.add_all([run, station])
+        self.session.add_all(metrics)
+        self.session.commit()
+
+        m = compute_predictions(self.session)
         self.assertTrue(m)

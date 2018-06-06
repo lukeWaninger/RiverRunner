@@ -472,9 +472,9 @@ def update_dropdown(marker=None):
 
 
 def run_ui():
-    app.run_server()
+    app.run_server(debug=DEBUG, host=HOST_IP)
     return True
 
-
-if __name__ == '__main__':
-    app.run_server(debug=DEBUG, host=HOST_IP)
+#
+# if __name__ == '__main__':
+#     app.run_server(debug=DEBUG, host=HOST_IP)

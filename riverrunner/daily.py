@@ -37,13 +37,14 @@ def log(message):
         f.write(f'{dt.datetime.now().isoformat()}: {message}\n')
 
 
-def get_weather_observations(session, attempt=0, retries=DARK_SKY_RETRIES):
+def get_weather_observations(session, attempt=0, retries=DARK_SKY_RETRIES, wait=DARK_SKY_WAIT):
     """input the past 24 hr observations and write to log
 
     Args:
         session: (Session) database connection
         attempt: (int) optional maximum retries for API call
         retries: (int) optional number of API retries
+        wait: (int) optional seconds between attempts
     Returns:
         True: if observations were successfully retrieved and inserted
         False: otherwise
@@ -59,13 +60,12 @@ def get_weather_observations(session, attempt=0, retries=DARK_SKY_RETRIES):
     except SQLAlchemyError as e:
         session.rollback()
         log(f'failed to gather daily observations - {str(e.args)}')
-        time.sleep(DARK_SKY_WAIT)
-        get_weather_observations(session, attempt+1)
+        time.sleep(wait)
+
+        return get_weather_observations(session, attempt+1)
 
     except Exception as e:
         log(f'failed to gather daily observations - {str(e.args)}')
-        time.sleep(DARK_SKY_WAIT)
-        get_weather_observations(session, attempt+1)
         return False
 
 
@@ -93,7 +93,7 @@ def compute_predictions(session):
         False: otherwise
     """
     try:
-        arima = Arima()
+        arima = Arima(session)
         repo = Repository(session)
 
         runs = repo.get_all_runs_as_list()
@@ -124,14 +124,16 @@ def compute_predictions(session):
             except Exception as e:
                 log(f'predictions for {run.run_id}-{run.run_name} failed - {[str(a) for a in e.args]}')
 
+        return True
+
     except Exception as e:
         log(f'failed to compute daily predictions - {str(e.args)}')
         return False
 
 
-def daily_run():
+def daily_run(db_context):
     """perform the daily observation retrieval and flow rate predictions"""
-    context = Context(settings.DATABASE)
+    context = Context(db_context)
     session = context.Session()
 
     get_weather_observations(session)
@@ -142,4 +144,4 @@ def daily_run():
 
 
 if __name__ == '__main__':
-    daily_run()
+    daily_run(settings.DATABASE)

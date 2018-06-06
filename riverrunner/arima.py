@@ -28,9 +28,12 @@ from riverrunner.repository import Repository
 class Arima:
     """
     Creates predictions for future flow rate using ARIMA model
+
+    Args:
+        session: (Session) db session
     """
-    def __init__(self):
-        self.repo = Repository()
+    def __init__(self, session):
+        self.repo = Repository(session)
 
     def get_data(self, run_id, metric_ids=None):
         """Retrieves data for selected run from database for past four years
@@ -68,6 +71,8 @@ class Arima:
         """
         time_series = self.get_data(run_id=run_id,
                                     metric_ids=['00003', '00060', '00001'])
+        if len(time_series) == 0:
+            return None
 
         precip = time_series[time_series.metric_id == '00003']
         precip['date_time'] = pd.to_datetime(precip['date_time'], utc=True)
@@ -114,6 +119,10 @@ class Arima:
         """
         # Retrieve data for modelling
         measures = self.daily_avg(run_id)
+
+        # don't try to compute if there aren't any measures
+        if measures is None:
+            return pd.DataFrame()
 
         # Take past 7-day average of exogenous predictors to use for
         # future prediction

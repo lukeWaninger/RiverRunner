@@ -52,9 +52,3 @@ class TestRepository(TestCase):
         """
         self.context.clear_all_tables(self.session)
 
-    def test_ui(self):
-        p = Process(target=run_ui)
-        p.start()
-
-        self.assertTrue(p.is_alive())
-        p.terminate()
