@@ -1,5 +1,3 @@
-from multiprocessing import Process
-from riverrunner.ui import *
 from riverrunner.tests.tcontext import TContext
 from unittest import TestCase
 

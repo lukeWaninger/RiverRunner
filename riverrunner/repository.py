@@ -6,6 +6,8 @@ standard CRUD operations as defined below.
 """
 
 import datetime
+from builtins import list
+
 import pandas as pd
 import psycopg2
 from riverrunner import context
@@ -224,10 +226,11 @@ class Repository:
         try:
             with self.__connection.cursor() as cursor:
                 with open(csv_file, "r") as f:
-                    cursor.copy_from(f, "tmp_measurement", sep=",")
+                    cursor.copy_from(f, "tmp_measurement", sep=",",
+                                     columns=('station_id', 'metric_id', 'date_time', 'value'))
                 cursor.execute("""
                     INSERT into measurement
-                        SELECT * FROM tmp_measurement
+                        SELECT * value FROM tmp_measurement
                     ON CONFLICT (station_id, metric_id, date_time)
                         DO UPDATE SET value = EXCLUDED.value;
                 """)
@@ -253,8 +256,13 @@ class Repository:
             None
         """
         try:
-            self.__session.add_all(measurements)
+            if not isinstance(measurements, list):
+                measurements = [measurements]
+
+            for m in measurements:
+                self.__session.merge(m)
             self.__session.commit()
+
         except SQLAlchemyError as e:
             print([str(a) for a in e.args])
             self.__session.rollback()

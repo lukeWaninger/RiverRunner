@@ -7,6 +7,7 @@ fill_gaps: the variables day and end can be modified as necessary to retrieve we
 specified date range
 """
 
+import os
 from riverrunner.arima import Arima
 from riverrunner.context import Prediction
 from riverrunner import continuous_retrieval
@@ -115,7 +116,6 @@ def compute_predictions(session):
                 repo.clear_predictions(run.run_id)
                 repo.put_predictions(to_add)
                 log(f'predictions for {run.run_id}-{run.run_name} added to db')
-                return True
 
             except SQLAlchemyError as e:
                 log(f'{run.run_id}-{run.run_name} failed - {[str(a) for a in e.args]}')
@@ -136,12 +136,20 @@ def daily_run(db_context):
     context = Context(db_context)
     session = context.Session()
 
-    get_weather_observations(session)
-    get_usgs_observations()
+    # get_weather_observations(session)
+    # get_usgs_observations()
     compute_predictions(session)
 
     session.close()
 
 
 if __name__ == '__main__':
+    # just make sure the path exists, we need reproducibility
+    # for aws auto-scaling
+    if not os.path.exists('data'):
+        os.makedirs('data')
+        os.makedirs('data/logs')
+    elif not os.path.exists('data/logs'):
+        os.makedirs('data/logs')
+
     daily_run(settings.DATABASE)

@@ -75,7 +75,9 @@ def fill_noaa_gaps(start_date, end_date, db=settings.DATABASE):
                 continue
             added += len(station_measurements)
 
-        print(f'added {added} - {start_date.isoformat()}')
+            station = station_measurements[0].station
+            print(f'added {added} measurements for station_id {station_measurements} - {start_date.isoformat()}')
+
         start_date += dt.timedelta(days=1)
         total += added
 
@@ -317,32 +319,50 @@ def upload_data_from_file(csv_file, from_csv=False):
     return success
 
 
+def fill_gaps():
+    # start_date = '2018-07-01'
+    # end_date   = '2018-07-10'
+    #
+    # csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
+    # for csv_file in csv_files:
+    #     print("uploading {}...".format(csv_file))
+    #     success = upload_data_from_file(csv_file=csv_file, from_csv=False)
+    #
+    # print(f'successfully uploaded usgs measurements ({start_date}-{end_date}) to db') if success else print('failed')
+
+    start_date = dt.datetime(year=2018, month=7, day=2)
+    end_date   = dt.datetime(year=2018, month=7, day=10)
+    fill_noaa_gaps(start_date, end_date)
+
+
 if __name__ == "__main__":
     # python scrape_usgs_data.py [--csv] --manual start-date end-date
     # python scrape_usgs_data.py [--csv] --daily [days-back]
 
-    from_csv = False
-    if sys.argv[1] == "--csv":
-        from_csv = True
+    # from_csv = False
+    # if sys.argv[1] == "--csv":
+    #     from_csv = True
+    #
+    # if "--manual" in sys.argv[1:3]:
+    #     index = sys.argv.index("--manual")
+    #     start_date, end_date = sys.argv[index+1:]
+    #
+    # elif "--daily" in sys.argv[1:3]:
+    #     index = sys.argv.index("--daily")
+    #     days_back = 0
+    #     if len(sys.argv) > index + 1:
+    #         days_back = int(sys.argv[index+1])
+    #     today = dt.date.today()
+    #     end_date = today - dt.timedelta(days=1)
+    #     start_date = end_date - dt.timedelta(days=days_back)
+    #     end_date = end_date.isoformat()
+    #     start_date = start_date.isoformat()
+    #
+    # csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
+    # for csv_file in csv_files:
+    #     print("uploading {}...".format(csv_file))
+    #     success = upload_data_from_file(csv_file=csv_file, from_csv=from_csv)
+    #
+    # fill_noaa_gaps(start_date, end_date)
 
-    if "--manual" in sys.argv[1:3]:
-        index = sys.argv.index("--manual")
-        start_date, end_date = sys.argv[index+1:]
-
-    elif "--daily" in sys.argv[1:3]:
-        index = sys.argv.index("--daily")
-        days_back = 0
-        if len(sys.argv) > index + 1:
-            days_back = int(sys.argv[index+1])
-        today = dt.date.today()
-        end_date = today - dt.timedelta(days=1)
-        start_date = end_date - dt.timedelta(days=days_back)
-        end_date = end_date.isoformat()
-        start_date = start_date.isoformat()
-
-    csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
-    for csv_file in csv_files:
-        print("uploading {}...".format(csv_file))
-        success = upload_data_from_file(csv_file=csv_file, from_csv=from_csv)
-
-    fill_noaa_gaps(start_date, end_date)
+    fill_gaps()
