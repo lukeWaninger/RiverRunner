@@ -13,7 +13,15 @@ import psycopg2
 from riverrunner import context
 from riverrunner.context import Measurement, Prediction, RiverRun, Station, StationRiverDistance
 from riverrunner import settings
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from tqdm import tqdm
+
+
+# data directory
+DATA_DIR = "data/"
+
+# number of measurements to upload per transaction
+STEP = 1000
 
 
 class Repository:
@@ -35,6 +43,10 @@ class Repository:
     def __del__(self):
         self.__session.close()
         self.__connection.close()
+
+    @property
+    def session(self):
+        return self.__session
 
     def clear_predictions(self, run_id):
         """delete all existing predictions from database
@@ -207,46 +219,7 @@ class Repository:
             print([str(a) for a in e.args])
             raise e
 
-    def put_measurements_from_csv(self, csv_file):
-        """ add a file of measurements
-
-        Notes:
-            * will overwrite previous values with same primary key
-            * connection will rollback transaction if commit fails
-
-        Args:
-            csv_file (file): name of file containing records to insert
-
-        Returns:
-            bool: success/exception
-
-        Raises:
-            Exception: if error occurs while connected to database
-        """
-        try:
-            with self.__connection.cursor() as cursor:
-                with open(csv_file, "r") as f:
-                    cursor.copy_from(f, "tmp_measurement", sep=",",
-                                     columns=('station_id', 'metric_id', 'date_time', 'value'))
-                cursor.execute("""
-                    INSERT into measurement
-                        SELECT * value FROM tmp_measurement
-                    ON CONFLICT (station_id, metric_id, date_time)
-                        DO UPDATE SET value = EXCLUDED.value;
-                """)
-                cursor.execute("""
-                    DELETE FROM tmp_measurement;
-                """)
-
-            self.__connection.commit()
-
-            return True
-        except:
-            self.__connection.rollback()
-
-            raise
-
-    def put_measurements_from_list(self, measurements):
+    def put_measurements(self, measurements=None, files=None):
         """add a list of measurements to the database
 
         Args
@@ -255,18 +228,56 @@ class Repository:
         Returns
             None
         """
-        try:
-            if not isinstance(measurements, list):
-                measurements = [measurements]
 
-            for m in measurements:
-                self.__session.merge(m)
-            self.__session.commit()
+        # validate input
+        if measurements is None and files is None:
+            raise ValueError('measurements not defined')
 
-        except SQLAlchemyError as e:
-            print([str(a) for a in e.args])
-            self.__session.rollback()
-            raise e
+        # make sure measurements is a list
+        if measurements is None:
+            measurements = []
+        elif not isinstance(measurements, list):
+            measurements = [measurements]
+        else:
+            pass
+
+        # make sure files is a list
+        if files is not isinstance(files, list):
+            files = [files]
+        else:
+            pass
+
+        # read all measurements from all files
+        for f in files:
+            def convert(r):
+                r = r.index
+
+                return Measurement(
+                    station_id=str(r[0]),
+                    metric_id=str(r[1]),
+                    date_time=r[2],
+                    value=float(r[3])
+                )
+
+            measurements += list(pd.read_csv(f'{DATA_DIR}/{f}').apply(convert, axis=1))
+
+        # proceed committing STEP measurements at a time
+        for i in tqdm(range(0, len(measurements), STEP), desc='uploading to aws'):
+            part = STEP if i + STEP <= len(measurements) else len(measurements) - i
+            current_set = measurements[i:part]
+
+            try:
+                self.__session.add_all(current_set)
+                self.__session.commit()
+
+            except IntegrityError as e:
+                print('bulk upload failed. merging one-by-one. this may take a while')
+                self.__session.rollback()
+
+                for m in measurements:
+                    self.__session.merge(m)
+
+                self.__session.commit()
 
     def put_predictions(self, predictions):
         """add a set of predictions

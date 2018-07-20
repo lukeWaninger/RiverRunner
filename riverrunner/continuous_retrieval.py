@@ -14,17 +14,13 @@ Examples:
     * optional days-back parameter must be an integer (defaults to 0)
     * optional argument to insert records into database from CSV file (for USGS data only)
 """
-
 import datetime as dt
-import dateutil
 import json
 import pandas as pd
 import requests
 from riverrunner import settings
 from riverrunner.context import Context, Measurement
 from riverrunner.repository import Repository
-from sqlalchemy.exc import SQLAlchemyError
-import sys
 
 
 # data directory
@@ -56,7 +52,7 @@ def fill_noaa_gaps(start_date, end_date, db=settings.DATABASE):
 
     repo = Repository(session)
     stations = repo.get_all_stations(source='NOAA')
-    total = 0
+    measurements = []
 
     # loop through each day retrieving observations
     while start_date <= end_date:
@@ -65,23 +61,11 @@ def fill_noaa_gaps(start_date, end_date, db=settings.DATABASE):
             axis=1
         ).values
 
-        # put them all in the db
-        added = 0
+        # flatten them out
         for station_measurements in content:
-            try:
-                repo.put_measurements_from_list(station_measurements)
-            except SQLAlchemyError:
-                session.rollback()
-                continue
-            added += len(station_measurements)
+            measurements += station_measurements
 
-            station = station_measurements[0].station
-            print(f'added {added} measurements for station_id {station_measurements} - {start_date.isoformat()}')
-
-        start_date += dt.timedelta(days=1)
-        total += added
-
-    return total
+    return measurements
 
 
 def get_noaa_predictions(run_id, session):
@@ -215,35 +199,6 @@ def make_station_observation_request(station, day):
         return None
 
 
-def put_24hr_observations(session):
-    """get yesterdays observations
-
-    Args
-        session (Session): database session
-    """
-    # create a repo and pull all the weather stations from NOAA
-    repo = Repository(session)
-    stations = repo.get_all_stations(source='NOAA')
-
-    # setup the day to retrieve
-    yesterday = dt.datetime.now() - dt.timedelta(hours=24)
-    yesterday = dt.datetime(year=yesterday.year, month=yesterday.month, day=yesterday.day)
-
-    # apply the api request to each station
-    content = stations.apply(
-        lambda station: make_station_observation_request(station, yesterday.isoformat()),
-        axis=1
-    ).values
-
-    # put them all in the db
-    added = 0
-    for station_measurements in content:
-        repo.put_measurements_from_list(station_measurements)
-        added += len(station_measurements)
-
-    return added
-
-
 def scrape_usgs_data(start_date, end_date):
     """ scrape data for all USGS sites and parameters, over the specified date range
 
@@ -287,82 +242,35 @@ def scrape_usgs_data(start_date, end_date):
     return out_files
 
 
-def upload_data_from_file(csv_file, from_csv=False):
-    """ insert all records contained in file to database
-
-    Args:
-        csv_file (str): full path of CSV file containing records
-        from_csv (bool): whether to insert into database using CSV or ORM (CSV scales better)
-
-    Returns:
-        bool: success/exception
-    """
-    r = Repository()
-
-    if from_csv:
-        success = r.put_measurements_from_csv(csv_file=csv_file)
-
+def fill_gaps(repository, start_date=None, end_date=None):
+    # check for start date
+    if start_date is None:
+        start_date = dt.datetime.now()
     else:
-        measurements = []
-        with open(csv_file, "r") as f:
-            for line in f:
-                site_id, param_code, date_time, value = line.strip().split(",")
-                measurement = Measurement(
-                    station_id=site_id,
-                    metric_id=param_code,
-                    date_time=dateutil.parser.parse(date_time),
-                    value=float(value)
-                )
-                measurements.append(measurement)
-        success = r.put_measurements_from_list(measurements=measurements)
+        pass
 
-    return success
+    # end for end date
+    if end_date is None:
+        end_date = dt.datetime.now()
+    else:
+        pass
 
+    # get new data
+    measurements = fill_noaa_gaps(start_date, end_date)
+    csv_files = scrape_usgs_data(
+        start_date=start_date.strftime(format='%Y-%m-%d'),
+        end_date=end_date.strftime(format='%Y-%m-%d')
+    )
 
-def fill_gaps():
-    # start_date = '2018-07-01'
-    # end_date   = '2018-07-10'
-    #
-    # csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
-    # for csv_file in csv_files:
-    #     print("uploading {}...".format(csv_file))
-    #     success = upload_data_from_file(csv_file=csv_file, from_csv=False)
-    #
-    # print(f'successfully uploaded usgs measurements ({start_date}-{end_date}) to db') if success else print('failed')
-
-    start_date = dt.datetime(year=2018, month=7, day=2)
-    end_date   = dt.datetime(year=2018, month=7, day=10)
-    fill_noaa_gaps(start_date, end_date)
+    # upload to aws
+    repository.put_measurements(measurements=measurements, files=csv_files)
 
 
-if __name__ == "__main__":
-    # python scrape_usgs_data.py [--csv] --manual start-date end-date
-    # python scrape_usgs_data.py [--csv] --daily [days-back]
-
-    # from_csv = False
-    # if sys.argv[1] == "--csv":
-    #     from_csv = True
-    #
-    # if "--manual" in sys.argv[1:3]:
-    #     index = sys.argv.index("--manual")
-    #     start_date, end_date = sys.argv[index+1:]
-    #
-    # elif "--daily" in sys.argv[1:3]:
-    #     index = sys.argv.index("--daily")
-    #     days_back = 0
-    #     if len(sys.argv) > index + 1:
-    #         days_back = int(sys.argv[index+1])
-    #     today = dt.date.today()
-    #     end_date = today - dt.timedelta(days=1)
-    #     start_date = end_date - dt.timedelta(days=days_back)
-    #     end_date = end_date.isoformat()
-    #     start_date = start_date.isoformat()
-    #
-    # csv_files = scrape_usgs_data(start_date=start_date, end_date=end_date)
-    # for csv_file in csv_files:
-    #     print("uploading {}...".format(csv_file))
-    #     success = upload_data_from_file(csv_file=csv_file, from_csv=from_csv)
-    #
-    # fill_noaa_gaps(start_date, end_date)
-
-    fill_gaps()
+# if __name__ == "__main__":
+#     repo = Repository()
+#
+#     fill_gaps(
+#         repo,
+#         start_date=dt.datetime(year=2018, month=7, day=2),
+#         end_date=dt.datetime(year=2018, month=7, day=2)
+#     )
