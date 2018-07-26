@@ -1,4 +1,5 @@
-﻿cd D:\OneDrive\git\RiverRunner
+﻿C:\Users\lukew\OneDrive\git\RiverRunner
+
 cp .\riverrunner\daily.py .
 
 conda activate rr

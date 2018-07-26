@@ -3,7 +3,7 @@ riverrunner/data/
 *.csv
 
 __pycache__
-client_secrets.json
+secrets.py
 
 *.cache/
 

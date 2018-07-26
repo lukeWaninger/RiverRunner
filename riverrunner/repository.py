@@ -21,7 +21,7 @@ from tqdm import tqdm
 DATA_DIR = "data/"
 
 # number of measurements to upload per transaction
-STEP = 1000
+STEP = 100
 
 
 class Repository:
@@ -43,10 +43,6 @@ class Repository:
     def __del__(self):
         self.__session.close()
         self.__connection.close()
-
-    @property
-    def session(self):
-        return self.__session
 
     def clear_predictions(self, run_id):
         """delete all existing predictions from database
@@ -135,7 +131,7 @@ class Repository:
 
         # ensure the run_id exists if it was supplied
         def raise_rid_error():
-            raise ValueError('run_id does not exist: %s' % run_id)
+            raise ValueError(f'run_id does not exist: {run_id}')
 
         if run_id > -1:
             try:
@@ -219,7 +215,7 @@ class Repository:
             print([str(a) for a in e.args])
             raise e
 
-    def put_measurements(self, measurements=None, files=None):
+    def put_measurements(self, measurements=None):
         """add a list of measurements to the database
 
         Args
@@ -229,55 +225,34 @@ class Repository:
             None
         """
 
-        # validate input
-        if measurements is None and files is None:
-            raise ValueError('measurements not defined')
-
         # make sure measurements is a list
         if measurements is None:
-            measurements = []
+            return
         elif not isinstance(measurements, list):
             measurements = [measurements]
         else:
             pass
 
-        # make sure files is a list
-        if files is not isinstance(files, list):
-            files = [files]
-        else:
-            pass
-
-        # read all measurements from all files
-        for f in files:
-            def convert(r):
-                r = r.index
-
-                return Measurement(
-                    station_id=str(r[0]),
-                    metric_id=str(r[1]),
-                    date_time=r[2],
-                    value=float(r[3])
-                )
-
-            measurements += list(pd.read_csv(f'{DATA_DIR}/{f}').apply(convert, axis=1))
-
         # proceed committing STEP measurements at a time
-        for i in tqdm(range(0, len(measurements), STEP), desc='uploading to aws'):
+        for i in tqdm(range(0, len(measurements), STEP), desc='uploading measurements'):
             part = STEP if i + STEP <= len(measurements) else len(measurements) - i
-            current_set = measurements[i:part]
+            current_set = measurements[i:i+part]
 
             try:
                 self.__session.add_all(current_set)
                 self.__session.commit()
 
             except IntegrityError as e:
-                print('bulk upload failed. merging one-by-one. this may take a while')
                 self.__session.rollback()
 
-                for m in measurements:
+                for m in current_set:
                     self.__session.merge(m)
 
                 self.__session.commit()
+
+            except Exception as e:
+                print('\nupload failed\n')
+                self.__session.rollback()
 
     def put_predictions(self, predictions):
         """add a set of predictions
@@ -309,3 +284,6 @@ class Repository:
             self.__session.rollback()
 
             return False
+
+    def rollback(self):
+        self.__session.rollback()

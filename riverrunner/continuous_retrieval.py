@@ -17,10 +17,12 @@ Examples:
 import datetime as dt
 import json
 import pandas as pd
+import re
 import requests
 from riverrunner import settings
 from riverrunner.context import Context, Measurement
 from riverrunner.repository import Repository
+from tqdm import tqdm
 
 
 # data directory
@@ -36,7 +38,7 @@ USGS_SITE_STATUS = "all"
 
 # USGS parameter codes
 PARAM_CODES = [
-    "00060",
+    '00003', '00060', '00001'
 ]
 
 
@@ -64,6 +66,9 @@ def fill_noaa_gaps(start_date, end_date, db=settings.DATABASE):
         # flatten them out
         for station_measurements in content:
             measurements += station_measurements
+
+        print(f'{start_date} complete')
+        start_date += dt.timedelta(days=1)
 
     return measurements
 
@@ -192,7 +197,6 @@ def make_station_observation_request(station, day):
                     date_time=timestamp
                 )
             )
-        print(f'{now}: {station.station_id} complete')
         return measurements
     else:
         print(f'{now}: {station.station_id} failed')
@@ -209,43 +213,45 @@ def scrape_usgs_data(start_date, end_date):
     Returns:
         [str]: list of full paths of CSV files that were written to
     """
-    start_date_file_ext = start_date.replace("-", "")
-    end_date_file_ext = end_date.replace("-", "")
     site_ids = get_usgs_site_ids()
     param_codes = PARAM_CODES
-    out_files = []
+
+    measurements = []
     for param_code in param_codes:
-        total_values = 0
-        out_file = DATA_DIR + "measurements_{}_{}_{}.csv".format(
-            param_code,
-            start_date_file_ext,
-            end_date_file_ext
-        )
-        out_files.append(out_file)
-        with open(out_file, "w") as f:
-            for site_id in site_ids:
-                json_data = get_usgs_json_data(
-                    site_id=site_id,
-                    start_date=start_date,
-                    end_date=end_date,
-                    param_code=param_code
+        print(f'making station observation request for param code: {param_code}')
+
+        for site_id in tqdm(site_ids, desc='converting USGS JSON to SQL'):
+            json_data = get_usgs_json_data(
+                site_id=site_id,
+                start_date=start_date,
+                end_date=end_date,
+                param_code=param_code
+            )
+
+            for date_time, value in json_data.items():
+                tz = date_time[date_time.find(':', 17)-3:]
+                date_time = re.sub(tz, '', date_time)
+
+                tz = re.sub(':', '', tz)
+                date_time = dt.datetime.strptime(f'{date_time}{tz}', '%Y-%m-%dT%H:%M:%S.%f%z')
+
+                measurements.append(
+                    Measurement(
+                        station_id=site_id,
+                        metric_id=param_code,
+                        date_time=date_time,
+                        value=float(value)
+                    )
                 )
-                total_values += len(json_data)
-                for date_time, value in json_data.items():
-                    f.write("{},{},{},{}\n".format(
-                        site_id,
-                        param_code,
-                        date_time,
-                        value
-                    ))
-        print("{}: {}".format(param_code, total_values))
-    return out_files
+
+    print(f'pulled {len(measurements)} USGS measurements')
+    return measurements
 
 
 def fill_gaps(repository, start_date=None, end_date=None):
     # check for start date
     if start_date is None:
-        start_date = dt.datetime.now()
+        start_date = dt.datetime.now()-dt.timedelta(days=1)
     else:
         pass
 
@@ -257,20 +263,22 @@ def fill_gaps(repository, start_date=None, end_date=None):
 
     # get new data
     measurements = fill_noaa_gaps(start_date, end_date)
-    csv_files = scrape_usgs_data(
+    measurements = [] if measurements is None else measurements
+
+    measurements += scrape_usgs_data(
         start_date=start_date.strftime(format='%Y-%m-%d'),
         end_date=end_date.strftime(format='%Y-%m-%d')
     )
 
     # upload to aws
-    repository.put_measurements(measurements=measurements, files=csv_files)
+    repository.put_measurements(measurements=measurements)
 
 
-# if __name__ == "__main__":
-#     repo = Repository()
-#
-#     fill_gaps(
-#         repo,
-#         start_date=dt.datetime(year=2018, month=7, day=2),
-#         end_date=dt.datetime(year=2018, month=7, day=2)
-#     )
+if __name__ == "__main__":
+    repo = Repository()
+
+    fill_gaps(
+        repo,
+        start_date=dt.datetime(year=2018, month=7, day=22),
+        end_date=dt.datetime(year=2018, month=7, day=24)
+    )

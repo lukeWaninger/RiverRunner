@@ -16,10 +16,10 @@ from sqlalchemy.exc import SQLAlchemyError
 
 
 """maximum number of API retries for Dark Sky"""
-DARK_SKY_RETRIES = 10
+DARK_SKY_RETRIES = 1
 
 """wait time in seconds between API call"""
-DARK_SKY_WAIT = 600
+DARK_SKY_WAIT = 100
 
 
 def log(message):
@@ -47,58 +47,50 @@ def compute_predictions(session):
         True: if observations were successfully retrieved and inserted
         False: otherwise
     """
-    try:
-        arima = Arima(session)
-        repo = Repository(session)
+    arima = Arima(session=session)
+    repo = Repository(session)
 
-        runs = repo.get_all_runs_as_list()
-        for run in runs:
-            try:
-                predictions = arima.arima_model(run.run_id)
+    runs = repo.get_all_runs_as_list()
+    for run in runs:
+        try:
+            predictions = arima.arima_model(run.run_id)
 
-                to_add = [
-                    Prediction(
-                        run_id=run.run_id,
-                        timestamp=pd.to_datetime(d),
-                        fr_lb=round(float(p), 1),
-                        fr=round(float(p), 1),
-                        fr_ub=round(float(p), 1)
-                    )
-                    for p, d in zip(predictions.values, predictions.index.values)
-                ]
+            to_add = [
+                Prediction(
+                    run_id=run.run_id,
+                    timestamp=pd.to_datetime(d),
+                    fr_lb=round(float(p), 1),
+                    fr=round(float(p), 1),
+                    fr_ub=round(float(p), 1)
+                )
+                for p, d in zip(predictions.values, predictions.index.values)
+            ]
 
-                repo.clear_predictions(run.run_id)
-                repo.put_predictions(to_add)
-                log(f'predictions for {run.run_id}-{run.run_name} added to db')
+            repo.clear_predictions(run.run_id)
+            repo.put_predictions(to_add)
+            log(f'predictions for {run.run_id}-{run.run_name} added to db')
 
-            except SQLAlchemyError as e:
-                log(f'{run.run_id}-{run.run_name} failed - {[str(a) for a in e.args]}')
-                session.rollback()
-
-            except Exception as e:
-                log(f'predictions for {run.run_id}-{run.run_name} failed - {[str(a) for a in e.args]}')
-
-        return True
-
-    except Exception as e:
-        log(f'failed to compute daily predictions - {str(e.args)}')
-        return False
-
-
-def daily_run(db_context):
-    """perform the daily observation retrieval and flow rate predictions"""
-    repo = Repository(db_context)
-
-    fill_gaps(repo)
-    compute_predictions(repo.session)
+        except SQLAlchemyError as e:
+            log(f'{run.run_id}-{run.run_name} failed - {[str(a) for a in e.args]}')
+            repo.rollback()
 
 
 if __name__ == '__main__':
-    # make sure the data and log dirs exist
+    # make sure the data and log directories exist
     if not os.path.exists('data'):
         os.makedirs('data')
         os.makedirs('data/logs')
     elif not os.path.exists('data/logs'):
         os.makedirs('data/logs')
 
-    daily_run(settings.DATABASE)
+    # setup db connection
+    context = Context(settings.DATABASE)
+    session = context.Session()
+
+    # get new data
+    repo = Repository(session)
+    fill_gaps(repo)
+    del repo
+
+    # compute new predictions
+    compute_predictions(session)
