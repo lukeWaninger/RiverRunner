@@ -207,8 +207,7 @@ def scrape_usgs_data(start_date, end_date):
     """ scrape data for all USGS sites and parameters, over the specified date range
 
     Args:
-        start_date (str): start date in ISO format, 'YYYY-MM-DD'
-        end_date (str): end date in ISO format, 'YYYY-MM-DD'
+        start-date (str): end date in ISO format, 'YYYY-MM-DD'
 
     Returns:
         [str]: list of full paths of CSV files that were written to
@@ -218,7 +217,7 @@ def scrape_usgs_data(start_date, end_date):
 
     measurements = []
     for param_code in param_codes:
-        print(f'making station observation request for param code: {param_code}')
+        print(f'\nmaking station observation requests for param code: {param_code}')
 
         for site_id in tqdm(site_ids, desc='converting USGS JSON to SQL'):
             json_data = get_usgs_json_data(
@@ -249,15 +248,17 @@ def scrape_usgs_data(start_date, end_date):
 
 
 def fill_gaps(repository, start_date=None, end_date=None):
+    now = dt.datetime.now()
+
     # check for start date
     if start_date is None:
-        start_date = dt.datetime.now()-dt.timedelta(days=1)
+        start_date = dt.datetime(year=now.year, month=now.month, day=now.day) - dt.timedelta(days=1)
     else:
         pass
 
     # end for end date
     if end_date is None:
-        end_date = dt.datetime.now()
+        end_date = dt.datetime(year=now.year, month=now.month, day=now.day)
     else:
         pass
 
@@ -279,6 +280,6 @@ if __name__ == "__main__":
 
     fill_gaps(
         repo,
-        start_date=dt.datetime(year=2018, month=7, day=22),
-        end_date=dt.datetime(year=2018, month=7, day=24)
+        start_date=dt.datetime(year=2018, month=7, day=25),
+        end_date=dt.datetime(year=2018, month=7, day=26)
     )

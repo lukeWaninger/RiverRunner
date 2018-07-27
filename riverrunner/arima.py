@@ -65,12 +65,10 @@ class Arima:
 
         Args:
             run_id (int): id of run for which model will be created
-
         Returns:
             DataFrame: containing daily measurements
         """
-        time_series = self.get_data(run_id=run_id,
-                                    metric_ids=['00003', '00060', '00001'])
+        time_series = self.get_data(run_id=run_id, metric_ids=['00003', '00060', '00001'])
         if len(time_series) == 0:
             return None
 
